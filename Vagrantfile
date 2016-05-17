@@ -1,6 +1,32 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+proxy = ENV["http_proxy"] || ""
+
+local_domain = "oas.local"
+foreman_ip = "192.168.12.42"
+foreman_hostname = "foreman1"
+foreman_fqdn = "#{foreman_hostname}.#{local_domain}"
+
+foreman_installer_options = [
+  "-v",
+  "--detailed-exitcodes",
+  "--enable-foreman-plugin-ansible",
+  "--enable-foreman-compute-ovirt",
+  "--enable-foreman-compute-ec2",
+  "--foreman-foreman-url=https://#{foreman_ip}",
+]
+
+hosts_content = <<-EOF
+127.0.0.1     localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1           localhost localhost.localdomain localhost6 localhost6.localdomain6
+#{foreman_ip} #{foreman_fqdn} #{foreman_hostname}
+EOF
+
+hosts_file = Tempfile.new('hosts')
+hosts_file.write(hosts_content)
+hosts_file.close
+
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
 # backwards compatibility). Please don't change it unless you know what
@@ -25,7 +51,7 @@ Vagrant.configure(2) do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  # config.vm.network "private_network", ip: "192.168.33.10"
+  config.vm.network "private_network", ip: foreman_ip
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -67,4 +93,27 @@ Vagrant.configure(2) do |config|
   #   sudo apt-get update
   #   sudo apt-get install -y apache2
   # SHELL
+
+  # host naming
+  config.vm.hostname = foreman_fqdn
+  config.vm.provision "file", source: hosts_file.path, destination: "/tmp/hosts"
+  config.vm.provision "shell", inline: "sudo tee /etc/hosts < /tmp/hosts"
+  config.vm.provision "shell", inline: "rm -v /tmp/hosts"
+
+  # host tools
+  config.vm.provision "file", source: "bin", destination: "/tmp"
+  config.vm.provision "shell", inline: "sudo chown -v root:root /tmp/bin/*"
+  config.vm.provision "shell", inline: "sudo mv -v /tmp/bin/* /usr/local/bin"
+  config.vm.provision "shell", inline: "rm -rv /tmp/bin"
+
+  # set environment
+  config.vm.provision "shell", inline: "/usr/local/bin/set_environment.sh -n http_proxy -v '#{proxy}'"
+  config.vm.provision "shell", inline: "/usr/local/bin/set_environment.sh -n https_proxy -v '#{proxy}'"
+
+  # foreman provision
+  config.vm.provision "shell", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
+  config.vm.provision "shell", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
+  config.vm.provision "shell", inline: "sudo yum -y -v install foreman-installer"
+  config.vm.provision "shell", inline: "sudo foreman-installer #{foreman_installer_options.join(" ")}"
+
 end
