@@ -17,6 +17,8 @@ foreman_installer_options = [
   "--foreman-foreman-url=https://#{foreman_ip}",
 ]
 
+foreman_installer_command = "sudo foreman-installer #{foreman_installer_options.join(" ")}"
+
 hosts_content = <<-EOF
 127.0.0.1     localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1           localhost localhost.localdomain localhost6 localhost6.localdomain6
@@ -114,6 +116,7 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
   config.vm.provision "shell", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
   config.vm.provision "shell", inline: "sudo yum -y -v install foreman-installer"
-  config.vm.provision "shell", inline: "sudo foreman-installer #{foreman_installer_options.join(" ")}"
+  # execute twice to ensure convergency
+  config.vm.provision "shell", inline: "#{foreman_installer_command};#{foreman_installer_command}"
 
 end
