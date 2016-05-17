@@ -23,15 +23,19 @@ unset http_proxy
 
 1. Descargue [Vagrant](https://www.vagrantup.com/) y [VirtualBox](https://www.virtualbox.org/)
 1. Ejecute `vagrant up` en este directorio, guarde la información de acceso a Foreman.
+
     ```
     * Foreman is running at https://192.168.12.42
         Initial credentials are admin / CONTRASEÑA
     ```
 1. Por conveniencia puede agregar estas líneas a su archivo `/etc/hosts`.
+
     ```
     192.168.12.42 foreman1.oas.local foreman1
     ```
+
    O ejecutar el siguiente comando.
+
     ```
     echo 192.168.12.42 foreman1.oas.local foreman1 | sudo tee -a /etc/hosts
     ```
