@@ -1,6 +1,8 @@
 # oasforeman
 
-Aprovisiona un servidor de Foreman local.
+![foreman architecture](http://theforeman.org/static/images/foreman_architecture.png)
+
+Aprovisiona un servidor de [Foreman](http://theforeman.org/) local.
 
 ## Importante nota sobre servidores proxy
 

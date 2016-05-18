@@ -1,0 +1,712 @@
+Usage:
+    foreman-installer [OPTIONS]
+
+Options:
+
+= Generic:
+    --reset-foreman-db            Drop foreman database first? You will lose all data! Unfortunately we
+                                  can't detect a failure at the moment so you should verify the success
+                                  manually. e.g. dropping can fail when DB is currently in use. (default: false)
+    --detailed-exitcodes          Provide transaction information via exit codes, see puppet-agent(8)
+                                  for full details. (default: false)
+    --[no-]colors                 Use color output on STDOUT (default: false)
+    --color-of-background COLOR   Your terminal background is :bright or :dark (default: :dark)
+    -d, --dont-save-answers       Skip saving answers to '/etc/foreman-installer/scenarios.d/foreman-answers.yaml'? (default: false)
+    --ignore-undocumented         Ignore inconsistent parameter documentation (default: false)
+    -i, --interactive             Run in interactive mode
+    --log-level LEVEL             Log level for log file output (default: :debug)
+    -n, --noop                    Run puppet in noop mode? (default: false)
+    -p, --profile                 Run puppet in profile mode? (default: false)
+    -s, --skip-checks-i-know-better Skip all system checks (default: false)
+    -v, --verbose                 Display log on STDOUT instead of progressbar
+    -l, --verbose-log-level LEVEL Log level for verbose mode output (default: "info")
+    -S, --scenario SCENARIO       Use installation scenario
+    --list-scenarios              List available installation scenaraios
+    --force                       Force change of installation scenaraio
+    --compare-scenarios           Show changes between last used scenario and the scenario specified with -S or --scenario argument
+    --migrations-only             Apply migrations to a selected scenario and exit
+    -h, --help                    print help
+    --full-help                   print complete help
+    --[no-]enable-foreman         Enable 'foreman' puppet module (default: true)
+    --[no-]enable-foreman-cli     Enable 'foreman_cli' puppet module (default: true)
+    --[no-]enable-foreman-proxy   Enable 'foreman_proxy' puppet module (default: true)
+    --[no-]enable-puppet          Enable 'puppet' puppet module (default: true)
+    --[no-]enable-foreman-plugin-ansible Enable 'foreman_plugin_ansible' puppet module (default: true)
+    --[no-]enable-foreman-plugin-bootdisk Enable 'foreman_plugin_bootdisk' puppet module (default: false)
+    --[no-]enable-foreman-plugin-chef Enable 'foreman_plugin_chef' puppet module (default: false)
+    --[no-]enable-foreman-plugin-cockpit Enable 'foreman_plugin_cockpit' puppet module (default: false)
+    --[no-]enable-foreman-plugin-default-hostgroup Enable 'foreman_plugin_default_hostgroup' puppet module (default: false)
+    --[no-]enable-foreman-plugin-dhcp-browser Enable 'foreman_plugin_dhcp_browser' puppet module (default: false)
+    --[no-]enable-foreman-plugin-digitalocean Enable 'foreman_plugin_digitalocean' puppet module (default: false)
+    --[no-]enable-foreman-plugin-discovery Enable 'foreman_plugin_discovery' puppet module (default: false)
+    --[no-]enable-foreman-plugin-docker Enable 'foreman_plugin_docker' puppet module (default: false)
+    --[no-]enable-foreman-plugin-hooks Enable 'foreman_plugin_hooks' puppet module (default: false)
+    --[no-]enable-foreman-plugin-memcache Enable 'foreman_plugin_memcache' puppet module (default: false)
+    --[no-]enable-foreman-plugin-openscap Enable 'foreman_plugin_openscap' puppet module (default: false)
+    --[no-]enable-foreman-plugin-ovirt-provision Enable 'foreman_plugin_ovirt_provision' puppet module (default: false)
+    --[no-]enable-foreman-plugin-puppetdb Enable 'foreman_plugin_puppetdb' puppet module (default: false)
+    --[no-]enable-foreman-plugin-remote-execution Enable 'foreman_plugin_remote_execution' puppet module (default: false)
+    --[no-]enable-foreman-plugin-salt Enable 'foreman_plugin_salt' puppet module (default: false)
+    --[no-]enable-foreman-plugin-setup Enable 'foreman_plugin_setup' puppet module (default: true)
+    --[no-]enable-foreman-plugin-tasks Enable 'foreman_plugin_tasks' puppet module (default: false)
+    --[no-]enable-foreman-plugin-templates Enable 'foreman_plugin_templates' puppet module (default: false)
+    --[no-]enable-foreman-compute-ec2 Enable 'foreman_compute_ec2' puppet module (default: true)
+    --[no-]enable-foreman-compute-gce Enable 'foreman_compute_gce' puppet module (default: false)
+    --[no-]enable-foreman-compute-libvirt Enable 'foreman_compute_libvirt' puppet module (default: false)
+    --[no-]enable-foreman-compute-openstack Enable 'foreman_compute_openstack' puppet module (default: false)
+    --[no-]enable-foreman-compute-ovirt Enable 'foreman_compute_ovirt' puppet module (default: true)
+    --[no-]enable-foreman-compute-rackspace Enable 'foreman_compute_rackspace' puppet module (default: false)
+    --[no-]enable-foreman-compute-vmware Enable 'foreman_compute_vmware' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-abrt Enable 'foreman_proxy_plugin_abrt' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-chef Enable 'foreman_proxy_plugin_chef' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-discovery Enable 'foreman_proxy_plugin_discovery' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-dns-powerdns Enable 'foreman_proxy_plugin_dns_powerdns' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-dynflow Enable 'foreman_proxy_plugin_dynflow' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-openscap Enable 'foreman_proxy_plugin_openscap' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-pulp Enable 'foreman_proxy_plugin_pulp' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-remote-execution-ssh Enable 'foreman_proxy_plugin_remote_execution_ssh' puppet module (default: false)
+    --[no-]enable-foreman-proxy-plugin-salt Enable 'foreman_proxy_plugin_salt' puppet module (default: false)
+
+
+= Module foreman:
+    --foreman-admin-email         E-mail address of the initial admin user (default: nil)
+    --foreman-admin-first-name    First name of the initial admin user (default: nil)
+    --foreman-admin-last-name     Last name of the initial admin user (default: nil)
+    --foreman-admin-password      Password of the initial admin user, default is randomly generated (default: "ik5gDJCdEihhHwSH")
+    --foreman-admin-username      Username for the initial admin user (default: "admin")
+    --foreman-apipie-task         Rake task to generate API documentation.
+                                  Use 'apipie:cache' on 1.7 or older, 'apipie:cache:index' on 1.8 or newer. (default: "apipie:cache:index")
+    --foreman-app-root            Name of foreman root directory (default: "/usr/share/foreman")
+    --foreman-authentication      Enable user authentication. Initial credentials are set using admin_username
+                                  and admin_password. (default: true)
+    --foreman-configure-brightbox-repo  Configure the Brightbox PPA for Ubuntu, providing updated Ruby and
+                                  Passenger packages (default: false)
+    --foreman-configure-epel-repo  If disabled the EPEL repo will not be configured on RedHat family systems. (default: true)
+    --foreman-configure-scl-repo  If disabled the SCL repo will not be configured on Red Hat clone systems.
+                                  (Currently only installs repos for CentOS and Scientific) (default: true)
+    --foreman-custom-repo         No need to change anything here by default
+                                  if set to true, no repo will be added by this module, letting you to
+                                  set it to some custom location. (default: true)
+    --foreman-db-adapter          Database 'production' adapter (default: nil)
+    --foreman-db-database         Database 'production' database (e.g. foreman) (default: nil)
+    --foreman-db-host             Database 'production' host (default: nil)
+    --foreman-db-manage           if enabled, will install and configure the database server on this host (default: true)
+    --foreman-db-password         Database 'production' password (default is random) (default: "YcgqnwFjNZuh7dYL8FraecuDJGvXCJa4")
+    --foreman-db-pool             Database 'production' size of connection pool (default: 5)
+    --foreman-db-port             Database 'production' port (default: nil)
+    --foreman-db-sslmode          Database 'production' ssl mode (default: nil)
+    --foreman-db-type             Database 'production' type (valid types: mysql/postgresql/sqlite) (default: "postgresql")
+    --foreman-db-username         Database 'production' user (e.g. foreman) (default: "foreman")
+    --foreman-email-conf          email configuration file, defaults to /etc/foreman/email.yaml (default: "email.yaml")
+    --foreman-email-delivery-method  can be sendmail or smtp regarding to foreman documentation (default: nil)
+    --foreman-email-smtp-address  if delivery_method is smtp, this should contain an valid smtp host (default: nil)
+    --foreman-email-smtp-authentication  authentication settings, can be none or login, defaults to none (default: "none")
+    --foreman-email-smtp-domain   email domain (default: nil)
+    --foreman-email-smtp-password  password for mail server auth, if authentication login (default: nil)
+    --foreman-email-smtp-port     smtp port, defaults to 25 (default: 25)
+    --foreman-email-smtp-user-name  user_name for mail server auth, if authentication login (default: nil)
+    --foreman-email-source        template to use for email configuration file (default: "email.yaml.erb")
+    --foreman-environment         Rails environment of foreman (default: "production")
+    --foreman-foreman-url         URL on which foreman is going to run (default: "https://192.168.12.42")
+    --foreman-gpgcheck            turn on/off gpg check in repo files (effective only on RedHat family systems) (default: true)
+    --foreman-group               Primary group for the Foreman user (default: "foreman")
+    --foreman-http-keytab         Path to keytab to be used for Kerberos authentication on the WebUI (default: "/etc/httpd/conf/http.keytab")
+    --foreman-initial-location    Name of an initial location (default: nil)
+    --foreman-initial-organization  Name of an initial organization (default: nil)
+    --foreman-ipa-authentication  Enable configuration for external authentication via IPA (default: false)
+    --foreman-ipa-manage-sssd     If ipa_authentication is true, should the installer manage SSSD? You can disable it
+                                  if you use another module for SSSD configuration (default: true)
+    --foreman-locations-enabled   Enable locations? (default: false)
+    --foreman-loggers             Enable or disable specific loggers, e.g. {"sql" => true} (default: {})
+    --foreman-logging-level       Logging level of the Foreman application (valid values: debug, info, warn, error, fatal) (default: "info")
+    --foreman-manage-user         Controls whether foreman module will manage the user on the system. (default true) (default: true)
+    --foreman-oauth-active        Enable OAuth authentication for REST API (default: true)
+    --foreman-oauth-consumer-key  OAuth consumer key (default: "4u9kAfG6ZVDRXya9EiwdMSSZkeexcyYp")
+    --foreman-oauth-consumer-secret  OAuth consumer secret (default: "GvBqNeVvQxGAJUAXxvsAASxKATYhicw6")
+    --foreman-oauth-map-users     Should foreman use the foreman_user header to identify API user? (default: false)
+    --foreman-organizations-enabled  Enable organizations? (default: false)
+    --foreman-pam-service         PAM service used for host-based access control in IPA (default: "foreman")
+    --foreman-passenger           Configure foreman via apache and passenger (default: true)
+    --foreman-passenger-interface  Defines which network interface passenger should listen on, undef means all interfaces (default: nil)
+    --foreman-passenger-min-instances  Minimum passenger worker instances to keep when application is idle. (default: "1")
+    --foreman-passenger-prestart  Pre-start the first passenger worker instance process during httpd start. (default: true)
+    --foreman-passenger-ruby      Ruby interpreter used to run Foreman under Passenger (default: "/usr/bin/tfm-ruby")
+    --foreman-passenger-ruby-package  Package to install to provide Passenger libraries for the active Ruby
+                                  interpreter (default: "tfm-rubygem-passenger-native")
+    --foreman-passenger-start-timeout  Amount of seconds to wait for Ruby application boot. (default: "600")
+    --foreman-plugin-prefix       String which is prepended to the plugin package names (default: "tfm-rubygem-foreman_")
+    --foreman-puppet-home         Puppet home directory (default: "/var/lib/puppet")
+    --foreman-puppetrun           Should foreman be able to start puppetruns on nodes (default: false)
+    --foreman-repo                This can be stable, nightly or a specific version i.e. 1.7 (default: "stable")
+    --foreman-selinux             when undef, foreman-selinux will be installed if SELinux is enabled
+                                  setting to false/true will override this check (e.g. set to false on 1.1) (default: nil)
+    --foreman-server-ssl-ca       Defines Apache mod_ssl SSLCACertificateFile setting in Foreman vhost conf file. (default: "/var/lib/puppet/ssl/certs/ca.pem")
+    --foreman-server-ssl-cert     Defines Apache mod_ssl SSLCertificateFile setting in Foreman vhost conf file. (default: "/var/lib/puppet/ssl/certs/foreman1.oas.local.pem")
+    --foreman-server-ssl-certs-dir  Defines Apache mod_ssl SSLCACertificatePath setting in Foreman vhost conf file. (default: "")
+    --foreman-server-ssl-chain    Defines Apache mod_ssl SSLCertificateChainFile setting in Foreman vhost conf file. (default: "/var/lib/puppet/ssl/certs/ca.pem")
+    --foreman-server-ssl-crl      Defines the Apache mod_ssl SSLCARevocationFile setting in Foreman vhost conf file. (default: "/var/lib/puppet/ssl/crl.pem")
+    --foreman-server-ssl-key      Defines Apache mod_ssl SSLCertificateKeyFile setting in Foreman vhost conf file. (default: "/var/lib/puppet/ssl/private_keys/foreman1.oas.local.pem")
+    --foreman-serveraliases       Server aliases of the VirtualHost in the webserver (default: ["foreman"])
+    --foreman-servername          Server name of the VirtualHost in the webserver (default: "foreman1.oas.local")
+    --foreman-ssl                 Enable and set require_ssl in Foreman settings (note: requires passenger, SSL does not apply to kickstarts) (default: true)
+    --foreman-unattended          Should foreman manage host provisioning as well (default: true)
+    --foreman-use-vhost           Enclose apache configuration in <VirtualHost>...</VirtualHost> (default: true)
+    --foreman-user                User under which foreman will run (default: "foreman")
+    --foreman-user-groups         Additional groups for the Foreman user (default: ["puppet"])
+    --foreman-version             foreman package version, it's passed to ensure parameter of package resource
+                                  can be set to specific version number, 'latest', 'present' etc. (default: "present")
+    --foreman-websockets-encrypt  Whether to encrypt websocket connections (default: true)
+    --foreman-websockets-ssl-cert  SSL certificate file to use when encrypting websocket connections (default: "/var/lib/puppet/ssl/certs/foreman1.oas.local.pem")
+    --foreman-websockets-ssl-key  SSL key file to use when encrypting websocket connections (default: "/var/lib/puppet/ssl/private_keys/foreman1.oas.local.pem")
+
+= Module foreman_cli:
+
+== Basic:
+    --foreman-cli-foreman-url     URL on which Foreman runs (default: nil)
+    --foreman-cli-password        Password for authentication (default: nil)
+    --foreman-cli-username        Username for authentication (default: nil)
+
+== Advanced:
+    --foreman-cli-manage-root-config  Whether to manage /root/.hammer configuration. (default: true)
+    --foreman-cli-refresh-cache   Check API documentation cache status on each request (default: false)
+    --foreman-cli-request-timeout  API request timeout, set -1 for infinity (default: 120)
+
+
+= Module foreman_compute_ec2:
+    --foreman-compute-ec2-package  Package name to install, use foreman-compute on Foreman 1.7 (default: "foreman-ec2")
+    --foreman-compute-ec2-version  Package version to install, defaults to installed (default: "installed")
+
+
+= Module foreman_compute_gce:
+    --foreman-compute-gce-version  Package version to install, defaults to installed (default: "installed")
+
+
+= Module foreman_compute_libvirt:
+    --foreman-compute-libvirt-version  Package version to install, defaults to installed (default: "installed")
+
+
+= Module foreman_compute_ovirt:
+    --foreman-compute-ovirt-version  Package version to install, defaults to installed (default: "installed")
+
+
+= Module foreman_compute_vmware:
+    --foreman-compute-vmware-version  Package version to install, defaults to installed (default: "installed")
+
+
+= Module foreman_plugin_discovery:
+    --foreman-plugin-discovery-image-name  tarball with images (default: "fdi-image-latest.tar")
+    --foreman-plugin-discovery-install-images  should the installer download and setup discovery images
+                                  for you? the average size is few hundreds of MB (default: false)
+    --foreman-plugin-discovery-source-url  source URL to download from (default: "http://downloads.theforeman.org/discovery/releases/latest/")
+    --foreman-plugin-discovery-tftp-root  tftp root to install image into (default: "/var/lib/tftpboot")
+
+
+= Module foreman_plugin_memcache:
+    --foreman-plugin-memcache-compress  will gzip-compress values larger than 1K (default: true)
+    --foreman-plugin-memcache-expires-in  global default for key TTL in seconds (default: 86400)
+    --foreman-plugin-memcache-hosts  an array of hosts running memcache (default: [])
+    --foreman-plugin-memcache-namespace  prepends each key with this value to provide simple namespacing (default: "foreman")
+
+
+= Module foreman_plugin_openscap:
+    --foreman-plugin-openscap-configure-openscap-repo  Enable custom yum repo with packages needed for foreman_openscap, (default: true)
+
+
+= Module foreman_plugin_ovirt_provision:
+    --foreman-plugin-ovirt-provision-package  Package name to install, use ruby193-rubygem-ovirt_provision_plugin on Foreman 1.8/1.9 on EL (default: "tfm-rubygem-ovirt_provision_plugin")
+
+
+= Module foreman_plugin_puppetdb:
+    --foreman-plugin-puppetdb-address  Address of puppetdb API. Defaults to 'https://localhost:8081/v2/commands' (default: "https://localhost:8081/v2/commands")
+    --foreman-plugin-puppetdb-dashboard-address  Address of puppetdb dashboard. Defaults to 'http://localhost:8080/dashboard' (default: "http://localhost:8080/dashboard")
+    --foreman-plugin-puppetdb-package  Package name to install, use ruby193-rubygem-puppetdb_foreman on Foreman 1.8/1.9 on EL (default: "tfm-rubygem-puppetdb_foreman")
+
+
+= Module foreman_plugin_tasks:
+    --foreman-plugin-tasks-package  Package name to install, use ruby193-rubygem-foreman-tasks on Foreman 1.8/1.9 on EL (default: "tfm-rubygem-foreman-tasks")
+    --foreman-plugin-tasks-service  Service name (default: "foreman-tasks")
+
+
+= Module foreman_proxy:
+    --foreman-proxy-autosign-location  Path to autosign configuration file (default: "/etc/puppet/autosign.conf")
+    --foreman-proxy-bind-host     Host to bind ports to, e.g. *, localhost, 0.0.0.0 (default: "*")
+    --foreman-proxy-bmc           Enable BMC feature (default: false)
+    --foreman-proxy-bmc-default-provider  BMC default provider. (default: "ipmitool")
+    --foreman-proxy-bmc-listen-on  BMC proxy to listen on https, http, or both (default: "https")
+    --foreman-proxy-custom-repo   No need to change anything here by default
+                                  if set to true, no repo will be added by this module, letting you to
+                                  set it to some custom location. (default: true)
+    --foreman-proxy-customrun-args  Puppet customrun command arguments (default: "-ay -f -s")
+    --foreman-proxy-customrun-cmd  Puppet customrun command (default: "/bin/false")
+    --foreman-proxy-dhcp          Enable DHCP feature (default: false)
+    --foreman-proxy-dhcp-config   DHCP config file path (default: "/etc/dhcp/dhcpd.conf")
+    --foreman-proxy-dhcp-gateway  DHCP pool gateway (default: "192.168.100.1")
+    --foreman-proxy-dhcp-interface  DHCP listen interface (default: "eth0")
+    --foreman-proxy-dhcp-key-name  DHCP key name (default: nil)
+    --foreman-proxy-dhcp-key-secret  DHCP password (default: nil)
+    --foreman-proxy-dhcp-leases   DHCP leases file (default: "/var/lib/dhcpd/dhcpd.leases")
+    --foreman-proxy-dhcp-listen-on  DHCP proxy to listen on https, http, or both (default: "https")
+    --foreman-proxy-dhcp-managed  DHCP is managed by Foreman proxy (default: true)
+    --foreman-proxy-dhcp-nameservers  DHCP nameservers (default: "default")
+    --foreman-proxy-dhcp-omapi-port  DHCP server OMAPI port (default: 7911)
+    --foreman-proxy-dhcp-option-domain  DHCP use the dhcpd config option domain-name (default: ["oas.local"])
+    --foreman-proxy-dhcp-provider  DHCP provider (default: "isc")
+    --foreman-proxy-dhcp-range    Space-separated DHCP pool range (default: false)
+    --foreman-proxy-dhcp-server   Address of DHCP server to manage (default: "127.0.0.1")
+    --foreman-proxy-dhcp-split-config-files  Split DHCP configuration files. This is needed since version 1.11. (default: true)
+    --foreman-proxy-dhcp-vendor   DHCP vendor (deprecated, use dhcp_provider) (default: nil)
+    --foreman-proxy-dir           Foreman proxy install directory (default: "/usr/share/foreman-proxy")
+    --foreman-proxy-dns           Enable DNS feature (default: true)
+    --foreman-proxy-dns-forwarders  DNS forwarders (default: ["10.0.2.3"])
+    --foreman-proxy-dns-interface  DNS interface (default: "enp0s8")
+    --foreman-proxy-dns-listen-on  DNS proxy to listen on https, http, or both (default: "https")
+    --foreman-proxy-dns-managed   DNS is managed by Foreman proxy (default: true)
+    --foreman-proxy-dns-provider  DNS provider (default: "nsupdate")
+    --foreman-proxy-dns-reverse   DNS reverse zone name (default: "12.168.192.in-addr.arpa")
+    --foreman-proxy-dns-server    Address of DNS server to manage (default: "127.0.0.1")
+    --foreman-proxy-dns-split-config-files  Split DNS configuration files. This is needed since version 1.10. (default: true)
+    --foreman-proxy-dns-tsig-keytab  Kerberos keytab for DNS updates using GSS-TSIG authentication (default: "/etc/foreman-proxy/dns.keytab")
+    --foreman-proxy-dns-tsig-principal  Kerberos principal for DNS updates using GSS-TSIG authentication (default: "foremanproxy/foreman1.oas.local@OAS.LOCAL")
+    --foreman-proxy-dns-ttl       DNS default TTL override (default: "86400")
+    --foreman-proxy-dns-zone      DNS zone name (default: "oas.local")
+    --foreman-proxy-foreman-base-url  Base Foreman URL used for REST interaction (default: "https://foreman1.oas.local")
+    --foreman-proxy-foreman-ssl-ca  SSL CA used to verify connections when accessing the Foreman API.
+                                  When not specified, the ssl_ca is used instead. (default: nil)
+    --foreman-proxy-foreman-ssl-cert  SSL client certificate used when accessing the Foreman API
+                                  When not specified, the ssl_cert is used instead. (default: nil)
+    --foreman-proxy-foreman-ssl-key  Corresponding key to a foreman_ssl_cert certificate
+                                  When not specified, the ssl_key is used instead. (default: nil)
+    --foreman-proxy-freeipa-remove-dns  Remove DNS entries from FreeIPA when deleting hosts from realm (default: true)
+    --foreman-proxy-gpgcheck      Turn on/off gpg check in repo files (effective only on RedHat family systems) (default: true)
+    --foreman-proxy-http          Enable HTTP (default: false)
+    --foreman-proxy-http-port     HTTP port to listen on (if http is enabled) (default: 8000)
+    --foreman-proxy-keyfile       DNS server keyfile path (default: "/etc/rndc.key")
+    --foreman-proxy-log           Foreman proxy log file, 'STDOUT' or 'SYSLOG' (default: "/var/log/foreman-proxy/proxy.log")
+    --foreman-proxy-log-buffer    Log buffer size (default: 2000)
+    --foreman-proxy-log-buffer-errors  Additional log buffer size for errors (default: 1000)
+    --foreman-proxy-log-level     Foreman proxy log level: WARN, DEBUG, ERROR, FATAL, INFO, UNKNOWN (default: "ERROR")
+    --foreman-proxy-logs          Enable Logs (log buffer) feature (default: false)
+    --foreman-proxy-logs-listen-on  Logs proxy to listen on https, http, or both (default: "https")
+    --foreman-proxy-manage-sudoersd  Whether to manage File['/etc/sudoers.d'] or not.  When reusing this module, this may be
+                                  disabled to let a dedicated sudo module manage it instead. (default: true)
+    --foreman-proxy-oauth-consumer-key  OAuth key to be used for REST interaction (default: "4u9kAfG6ZVDRXya9EiwdMSSZkeexcyYp")
+    --foreman-proxy-oauth-consumer-secret  OAuth secret to be used for REST interaction (default: "GvBqNeVvQxGAJUAXxvsAASxKATYhicw6")
+    --foreman-proxy-oauth-effective-user  User to be used for REST interaction (default: "admin")
+    --foreman-proxy-plugin-version  foreman plugins version, it's passed to ensure parameter of plugins package resource
+                                  can be set to 'latest', 'present',  'installed', 'absent'. (default: "installed")
+    --foreman-proxy-port          Port to listen on (deprecated in favor of $ssl_port and $http_port) (default: nil)
+    --foreman-proxy-puppet-cache-location  Location to store cached puppet classes (default: "/var/cache/foreman-proxy")
+    --foreman-proxy-puppet-group  Groups of Foreman proxy user (default: "puppet")
+    --foreman-proxy-puppet-ssl-ca  SSL CA used to verify connections when accessing the Puppet master API (default: "/var/lib/puppet/ssl/certs/ca.pem")
+    --foreman-proxy-puppet-ssl-cert  SSL certificate used when accessing the Puppet master API (default: "/var/lib/puppet/ssl/certs/foreman1.oas.local.pem")
+    --foreman-proxy-puppet-ssl-key  SSL private key used when accessing the Puppet master API (default: "/var/lib/puppet/ssl/private_keys/foreman1.oas.local.pem")
+    --foreman-proxy-puppet-url    URL of the Puppet master itself for API requests (default: "https://foreman1.oas.local:8140")
+    --foreman-proxy-puppet-use-cache  Whether to enable caching of puppet classes (default: nil)
+    --foreman-proxy-puppet-use-environment-api  Override use of Puppet's API to list environments.  When unset, the proxy will
+                                  try to determine this automatically. (default: nil)
+    --foreman-proxy-puppet-user   Which user to invoke sudo as to run puppet commands (default: "root")
+    --foreman-proxy-puppetca      Enable Puppet CA feature (default: true)
+    --foreman-proxy-puppetca-cmd  Puppet CA command to be allowed in sudoers (default: "/usr/bin/puppet cert")
+    --foreman-proxy-puppetca-listen-on  Puppet CA feature to listen on https, http, or both (default: "https")
+    --foreman-proxy-puppetdir     Puppet var directory (default: "/etc/puppet")
+    --foreman-proxy-puppetrun     Enable puppet run/kick feature (default: true)
+    --foreman-proxy-puppetrun-cmd  Puppet run/kick command to be allowed in sudoers (default: "/usr/bin/puppet kick")
+    --foreman-proxy-puppetrun-listen-on  Puppet run proxy to listen on https, http, or both (default: "https")
+    --foreman-proxy-puppetrun-provider  Set puppet_provider to handle puppet run/kick via mcollective (default: nil)
+    --foreman-proxy-puppetssh-command  The command used by puppetrun_provider puppetssh (default: "/usr/bin/puppet agent --onetime --no-usecacheonfailure")
+    --foreman-proxy-puppetssh-keyfile  The keyfile for puppetrun_provider puppetssh commands (default: "/etc/foreman-proxy/id_rsa")
+    --foreman-proxy-puppetssh-sudo  Whether to use sudo before commands when using puppetrun_provider puppetssh (default: false)
+    --foreman-proxy-puppetssh-user  The user for puppetrun_provider puppetssh (default: "root")
+    --foreman-proxy-puppetssh-wait  Whether to wait for completion of the Puppet command over SSH and return
+                                  the exit code (default: false)
+    --foreman-proxy-realm         Enable realm management feature (default: false)
+    --foreman-proxy-realm-keytab  Kerberos keytab path to authenticate realm updates (default: "/etc/foreman-proxy/freeipa.keytab")
+    --foreman-proxy-realm-listen-on  Realm proxy to listen on https, http, or both (default: "https")
+    --foreman-proxy-realm-principal  Kerberos principal for realm updates (default: "realm-proxy@EXAMPLE.COM")
+    --foreman-proxy-realm-provider  Realm management provider (default: "freeipa")
+    --foreman-proxy-register-in-foreman  Register proxy back in Foreman (default: true)
+    --foreman-proxy-registered-name  Proxy name which is registered in Foreman (default: "foreman1.oas.local")
+    --foreman-proxy-registered-proxy-url  Proxy URL which is registered in Foreman (default: nil)
+    --foreman-proxy-repo          This can be stable, rc, or nightly (default: "stable")
+    --foreman-proxy-salt-puppetrun-cmd  Salt command to trigger Puppet run (default: "puppet.run")
+    --foreman-proxy-ssl           Enable SSL, ensure feature is added with "https://" protocol if true (default: true)
+    --foreman-proxy-ssl-ca        SSL CA to validate the client certificates used to access the proxy (default: "/var/lib/puppet/ssl/certs/ca.pem")
+    --foreman-proxy-ssl-cert      SSL certificate to be used to run the foreman proxy via https. (default: "/var/lib/puppet/ssl/certs/foreman1.oas.local.pem")
+    --foreman-proxy-ssl-key       Corresponding key to a ssl_cert certificate (default: "/var/lib/puppet/ssl/private_keys/foreman1.oas.local.pem")
+    --foreman-proxy-ssl-port      HTTPS port to listen on (if ssl is enabled) (default: 8443)
+    --foreman-proxy-ssldir        Puppet CA ssl directory (default: "/var/lib/puppet/ssl")
+    --foreman-proxy-template-url  URL a client should use for provisioning templates (default: "http://foreman1.oas.local:8000")
+    --foreman-proxy-templates     Enable templates feature (default: false)
+    --foreman-proxy-templates-listen-on  Templates proxy to listen on https, http, or both (default: "both")
+    --foreman-proxy-tftp          Enable TFTP feature (default: true)
+    --foreman-proxy-tftp-dirs     Directories to be create in $tftp_root (default: ["/var/lib/tftpboot/pxelinux.cfg", "/var/lib/tftpboot/boot", "/var/lib/tftpboot/ztp.cfg", "/var/lib/tftpboot/poap.cfg"])
+    --foreman-proxy-tftp-listen-on  TFTP proxy to listen on https, http, or both (default: "https")
+    --foreman-proxy-tftp-manage-wget  If enabled will install the wget package (default: true)
+    --foreman-proxy-tftp-root     TFTP root directory (default: "/var/lib/tftpboot")
+    --foreman-proxy-tftp-servername  Defines the TFTP Servername to use, overrides the name in the subnet declaration (default: "192.168.12.42")
+    --foreman-proxy-tftp-syslinux-filenames  Syslinux files to install on TFTP (full paths) (default: ["/usr/share/syslinux/chain.c32", "/usr/share/syslinux/menu.c32", "/usr/share/syslinux/memdisk", "/usr/share/syslinux/pxelinux.0"])
+    --foreman-proxy-tftp-syslinux-files  Syslinux files to install on TFTP (copied from $tftp_syslinux_root,
+                                  deprecated, see $tftp_syslinux_filenames) (default: nil)
+    --foreman-proxy-tftp-syslinux-root  Directory that hold syslinux files (deprecated, see $tftp_syslinux_filenames) (default: nil)
+    --foreman-proxy-trusted-hosts  Only hosts listed will be permitted, empty array to disable authorization (default: ["foreman1.oas.local"])
+    --foreman-proxy-use-sudoersd  Add a file to /etc/sudoers.d (true) or uses augeas (false) (default: true)
+    --foreman-proxy-user          User under which foreman proxy will run (default: "foreman-proxy")
+    --foreman-proxy-version       foreman package version, it's passed to ensure parameter of package resource
+                                  can be set to specific version number, 'latest', 'present' etc. (default: "present")
+    --foreman-proxy-virsh-network  Network for virsh DNS/DHCP provider (default: "default")
+
+
+= Module foreman_proxy_plugin_abrt:
+    --foreman-proxy-plugin-abrt-abrt-send-log-file  Log file for the forwarding script. (default: "/var/log/foreman-proxy/abrt-send.log")
+    --foreman-proxy-plugin-abrt-aggregate-reports  Merge duplicate reports before sending (default: true)
+    --foreman-proxy-plugin-abrt-enabled  Enables/disables the plugin (default: true)
+    --foreman-proxy-plugin-abrt-faf-server-ssl-cert  Enable client authentication to FAF server: set ssl certificate (default: nil)
+    --foreman-proxy-plugin-abrt-faf-server-ssl-key  Enable client authentication to FAF server: set ssl key (default: nil)
+    --foreman-proxy-plugin-abrt-faf-server-ssl-noverify  Set to true if FAF server uses self-signed certificate (default: true)
+    --foreman-proxy-plugin-abrt-faf-server-url  FAF server instance the reports will be forwarded to (default: nil)
+    --foreman-proxy-plugin-abrt-group  group owner of the configuration file (default: nil)
+    --foreman-proxy-plugin-abrt-listen-on  Proxy feature listens on http, https, or both (default: "https")
+    --foreman-proxy-plugin-abrt-send-period  Period (in seconds) after which collected reports are forwarded.
+                                  Meaningful only if smart-proxy-abrt-send is run as a daemon (not from cron). (default: 600)
+    --foreman-proxy-plugin-abrt-spooldir  Directory where uReports are stored before they are sent (default: "/var/spool/foreman-proxy-abrt")
+    --foreman-proxy-plugin-abrt-version  plugin package version, it's passed to ensure parameter of package resource
+                                  can be set to specific version number, 'latest', 'present' etc. (default: nil)
+
+
+= Module foreman_proxy_plugin_chef:
+    --foreman-proxy-plugin-chef-client-name  chef client name used for authentication of other client requests (default: "foreman1.oas.local")
+    --foreman-proxy-plugin-chef-enabled  enables/disables the plugin (default: true)
+    --foreman-proxy-plugin-chef-group  group owner of the configuration file (default: nil)
+    --foreman-proxy-plugin-chef-listen-on  Proxy feature listens on http, https, or both (default: "https")
+    --foreman-proxy-plugin-chef-private-key  path to file containing private key for $client_name client (default: "/etc/chef/client.pem")
+    --foreman-proxy-plugin-chef-server-url  chef server url (default: "https://foreman1.oas.local")
+    --foreman-proxy-plugin-chef-ssl-pem-file  if $ssl_verify is true you can specify a path to a file which
+                                  contains certificate and related private key if the certificate
+                                  is not globally trusted (default: nil)
+    --foreman-proxy-plugin-chef-ssl-verify  should we perform chef server ssl cert verification? this requires
+                                  CA certificate installed and trusted (default: true)
+    --foreman-proxy-plugin-chef-version  plugin package version, it's passed to ensure parameter of package resource
+                                  can be set to specific version number, 'latest', 'present' etc. (default: nil)
+
+
+= Module foreman_proxy_plugin_discovery:
+    --foreman-proxy-plugin-discovery-image-name  tarball with images (default: "fdi-image-latest.tar")
+    --foreman-proxy-plugin-discovery-install-images  should the discovery image be downloaded and extracted (default: false)
+    --foreman-proxy-plugin-discovery-source-url  source URL to download from (default: "http://downloads.theforeman.org/discovery/releases/latest/")
+    --foreman-proxy-plugin-discovery-tftp-root  tftp root to install image into (default: "/var/lib/tftpboot")
+
+
+= Module foreman_proxy_plugin_dns_powerdns:
+    --foreman-proxy-plugin-dns-powerdns-manage-database  Whether to manage the mysql database. Also includes the mysql server. (default: false)
+    --foreman-proxy-plugin-dns-powerdns-mysql-database  MySQL server database (default: "pdns")
+    --foreman-proxy-plugin-dns-powerdns-mysql-hostname  MySQL server hostname (default: "localhost")
+    --foreman-proxy-plugin-dns-powerdns-mysql-password  MySQL server password (default: "7x4xRApf9TM3Pzrb")
+    --foreman-proxy-plugin-dns-powerdns-mysql-username  MySQL server username (default: "pdns")
+    --foreman-proxy-plugin-dns-powerdns-pdnssec  pdnssec command to run rectify-zone with. Can be an empty string. (default: "pdnssec")
+
+
+= Module foreman_proxy_plugin_dynflow:
+    --foreman-proxy-plugin-dynflow-console-auth  Whether to enable trusted hosts and ssl for the dynflow console (default: true)
+    --foreman-proxy-plugin-dynflow-database-path  Path to the SQLite database file (default: "/var/lib/foreman-proxy/dynflow/dynflow.sqlite")
+    --foreman-proxy-plugin-dynflow-enabled  Enables/disables the plugin (default: true)
+    --foreman-proxy-plugin-dynflow-listen-on  Proxy feature listens on https, http, or both (default: "https")
+
+
+= Module foreman_proxy_plugin_openscap:
+    --foreman-proxy-plugin-openscap-enabled  enables/disables the plugin (default: true)
+    --foreman-proxy-plugin-openscap-listen-on  Proxy feature listens on http, https, or both (default: "https")
+    --foreman-proxy-plugin-openscap-openscap-send-log-file  Log file for the forwarding script (default: "/var/log/foreman-proxy/openscap-send.log")
+    --foreman-proxy-plugin-openscap-spooldir  Directory where OpenSCAP audits are stored
+                                  before they are forwarded to Foreman (default: "/var/spool/foreman-proxy/openscap")
+    --foreman-proxy-plugin-openscap-version  plugin package version, it's passed to ensure parameter of package resource
+                                  can be set to specific version number, 'latest', 'present' etc. (default: nil)
+
+
+= Module foreman_proxy_plugin_pulp:
+    --foreman-proxy-plugin-pulp-enabled  enables/disables the pulp plugin (default: true)
+    --foreman-proxy-plugin-pulp-group  group owner of the configuration file (default: nil)
+    --foreman-proxy-plugin-pulp-listen-on  Proxy feature listens on http, https, or both (default: "https")
+    --foreman-proxy-plugin-pulp-mongodb-dir  directory for Mongo DB (default: "/var/lib/mongodb")
+    --foreman-proxy-plugin-pulp-pulp-content-dir  directory for pulp content (default: "/var/lib/pulp/content")
+    --foreman-proxy-plugin-pulp-pulp-dir  directory for pulp (default: "/var/lib/pulp")
+    --foreman-proxy-plugin-pulp-pulp-url  pulp url to use (default: "https://foreman1.oas.local/pulp")
+    --foreman-proxy-plugin-pulp-pulpnode-enabled  enables/disables the pulpnode plugin (default: false)
+    --foreman-proxy-plugin-pulp-version  plugin package version, it's passed to ensure parameter of package resource
+                                  can be set to specific version number, 'latest', 'present' etc. (default: nil)
+
+
+= Module foreman_proxy_plugin_remote_execution_ssh:
+    --foreman-proxy-plugin-remote-execution-ssh-enabled  Enables/disables the plugin (default: true)
+    --foreman-proxy-plugin-remote-execution-ssh-generate-keys  Automatically generate SSH keys (default: true)
+    --foreman-proxy-plugin-remote-execution-ssh-listen-on  Proxy feature listens on https, http, or both (default: "https")
+    --foreman-proxy-plugin-remote-execution-ssh-local-working-dir  Local working directory on the smart proxy (default: "/var/tmp")
+    --foreman-proxy-plugin-remote-execution-ssh-remote-working-dir  Remote working directory on clients (default: "/var/tmp")
+    --foreman-proxy-plugin-remote-execution-ssh-ssh-identity-dir  Directory where SSH keys are stored (default: "/usr/share/foreman-proxy/.ssh")
+    --foreman-proxy-plugin-remote-execution-ssh-ssh-identity-file  Provide an alternative name for the SSH keys (default: "id_rsa_foreman_proxy")
+    --foreman-proxy-plugin-remote-execution-ssh-ssh-keygen  Location of the ssh-keygen binary (default: "/usr/bin/ssh-keygen")
+
+
+= Module foreman_proxy_plugin_salt:
+    --foreman-proxy-plugin-salt-api  Use Salt API (default: false)
+    --foreman-proxy-plugin-salt-api-auth  Salt API auth mechanism (default: "pam")
+    --foreman-proxy-plugin-salt-api-password  Salt API password (default: "saltpassword")
+    --foreman-proxy-plugin-salt-api-url  Salt API URL (default: "https://localhost:8080")
+    --foreman-proxy-plugin-salt-api-username  Salt API username (default: "saltuser")
+    --foreman-proxy-plugin-salt-autosign-file  File to use for salt autosign (default: "/etc/salt/autosign.conf")
+    --foreman-proxy-plugin-salt-enabled  Enables/disables the plugin (default: true)
+    --foreman-proxy-plugin-salt-group  Owner of plugin configuration (default: nil)
+    --foreman-proxy-plugin-salt-listen-on  Proxy feature listens on https, http, or both (default: "https")
+    --foreman-proxy-plugin-salt-user  User to run salt commands under (default: "root")
+
+= Module puppet:
+
+== Basic:
+    --puppet-additional-settings  A hash of additional main settings. (default: {})
+    --puppet-auth-template        Use a custom template for the auth
+                                  configuration. (default: "puppet/auth.conf.erb")
+    --puppet-autosign             Enable or disable autosign or change location
+                                  of autosign.conf or autosign script.  If this
+                                  is set to a script, make sure that script
+                                  considers the content of autosign.conf, as it
+                                  might break Foreman functionality if it
+                                  doesn't. If this is set to a boolean, it can
+                                  be cast as a string or a boolean. (default: "$confdir/autosign.conf { mode = 664 }")
+    --puppet-ca-port              Puppet CA port (default: nil)
+    --puppet-ca-server            Use a different ca server. Should be either
+                                  a string with the location of the ca_server
+                                  or 'false'. (default: nil)
+    --puppet-classfile            The file in which puppet agent stores a list
+                                  of the classes associated with the retrieved
+                                  configuration. (default: "$statedir/classes.txt")
+    --puppet-codedir              Override the puppet code directory. (default: "/etc/puppet")
+    --puppet-configtimeout        How long the client should wait for the
+                                  configuration to be retrieved before
+                                  considering it a failure. (default: 120)
+    --puppet-cron-cmd             Specify command to launch when runmode is
+                                  set 'cron'. (default: nil)
+    --puppet-dir                  Override the puppet directory. (default: "/etc/puppet")
+    --puppet-dns-alt-names        Use additional DNS names when generating a
+                                  certificate.  Defaults to an empty Array. (default: [])
+    --puppet-group                Override the name of the puppet group. (default: "puppet")
+    --puppet-hiera-config         The hiera configuration file. (default: "$confdir/hiera.yaml")
+    --puppet-listen               Should the puppet agent listen for connections. (default: false)
+    --puppet-listen-to            An array of servers allowed to initiate a puppet run.
+                                  If $listen = true one of three things will happen:
+                                  1) if $listen_to is not empty then this array
+                                  will be used.
+                                  2) if $listen_to is empty and $puppetmaster is
+                                  defined then only $puppetmaster will be
+                                  allowed.
+                                  3) if $puppetmaster is not defined or empty,
+                                  $fqdn will be used. (default: [])
+    --puppet-logdir               Override the log directory. (default: "/var/log/puppet")
+    --puppet-main-template        Use a custom template for the main puppet
+                                  configuration. (default: "puppet/puppet.conf.erb")
+    --puppet-manage-packages      Should this module install packages or not.
+                                  Can also install only server packages with value
+                                  of 'server' or only agent packages with 'agent'.
+                                  Defaults to true (default: true)
+    --puppet-module-repository    Use a different puppet module repository (default: nil)
+    --puppet-nsauth-template      Use a custom template for the nsauth configuration. (default: "puppet/namespaceauth.conf.erb")
+    --puppet-package-provider     The provider used to install the agent.
+                                  Defaults to chocolatey on Windows
+                                  Defaults to undef elsewhere (default: nil)
+    --puppet-package-source       The location of the file to be used by the
+                                  agent's package resource.
+                                  Defaults to undef. If 'windows' or 'msi' are
+                                  used as the provider then this setting is
+                                  required. (default: nil)
+    --puppet-pluginfactsource     URL to retrieve Puppet facts from during pluginsync (default: "puppet:///pluginfacts")
+    --puppet-pluginsource         URL to retrieve Puppet plugins from during pluginsync (default: "puppet:///plugins")
+    --puppet-pluginsync           Enable pluginsync. (default: true)
+    --puppet-port                 Override the port of the master we connect to. (default: 8140)
+    --puppet-rundir               Override the PID directory. (default: "/var/run/puppet")
+    --puppet-runinterval          Set up the interval (in seconds) to run
+                                  the puppet agent. (default: 1800)
+    --puppet-runmode              Select the mode to setup the puppet agent.
+                                  Can be either 'cron', 'service',
+                                  'systemd.timer', or 'none'. (default: "service")
+    --puppet-sharedir             Override the system data directory. (default: "/usr/share/puppet")
+    --puppet-show-diff            Show and report changed files with diff output (default: false)
+    --puppet-splay                Switch to enable a random amount of time
+                                  to sleep before each run. (default: false)
+    --puppet-splaylimit           The maximum time to delay before runs.
+                                  Defaults to being the same as the run interval.
+                                  This setting can be a time interval in seconds
+                                  (30 or 30s), minutes (30m), hours (6h), days (2d),
+                                  or years (5y). (default: "1800")
+    --puppet-srv-domain           Search domain for SRV records (default: "oas.local")
+    --puppet-ssldir               Override where SSL certificates are kept. (default: "/var/lib/puppet/ssl")
+    --puppet-syslogfacility       Facility name to use when logging to syslog (default: nil)
+    --puppet-systemd-cmd          Specify command to launch when runmode is
+                                  set 'systemd.timer'. (default: nil)
+    --puppet-unavailable-runmodes  Runmodes that are not available for the
+                                  current system. This module will not try
+                                  to disable these modes. Default is []
+                                  on Linux, ['cron', 'systemd.timer'] on
+                                  Windows and ['systemd.timer'] on other
+                                  systems. (default: [])
+    --puppet-use-srv-records      Whether DNS SRV records will be used to resolve
+                                  the Puppet master (default: false)
+    --puppet-usecacheonfailure    Switch to enable use of cached catalog on
+                                  failure of run. (default: true)
+    --puppet-user                 Override the name of the puppet user. (default: "puppet")
+    --puppet-vardir               Override the puppet var directory. (default: "/var/lib/puppet")
+    --puppet-version              Specify a specific version of a package to
+                                  install. The version should be the exact
+                                  match for your distro.
+                                  You can also use certain values like 'latest'. (default: "present")
+
+== puppet::agent:
+    --puppet-agent                Should a puppet agent be installed (default: true)
+    --puppet-agent-additional-settings  A hash of additional agent settings.
+                                  Example: {stringify_facts => true} (default: {})
+    --puppet-agent-noop           Run the agent in noop mode. (default: false)
+    --puppet-agent-restart-command  The command which gets excuted on puppet service restart (default: "/usr/bin/systemctl reload-or-restart puppet")
+    --puppet-agent-template       Use a custom template for the agent puppet
+                                  configuration. (default: "puppet/agent/puppet.conf.erb")
+    --puppet-client-package       Install a custom package to provide
+                                  the puppet client (default: ["puppet"])
+    --puppet-dir-group            Group of the base puppet directory, used when
+                                  puppet::server is false. (default: "puppet")
+    --puppet-dir-owner            Owner of the base puppet directory, used when
+                                  puppet::server is false. (default: "puppet")
+    --puppet-environment          Default environment of the Puppet agent (default: "production")
+    --puppet-postrun-command      A command which gets excuted after each Puppet run (default: nil)
+    --puppet-prerun-command       A command which gets excuted before each Puppet run (default: nil)
+    --puppet-puppetmaster         Hostname of your puppetmaster (server
+                                  directive in puppet.conf) (default: nil)
+    --puppet-remove-lock          Remove the agent lock when running. (default: true)
+    --puppet-service-name         The name of the puppet agent service. (default: "puppet")
+    --puppet-systemd-unit-name    The name of the puppet systemd units. (default: "puppet-run")
+
+== Advanced server:
+    --puppet-allow-any-crl-auth   Allow any authentication for the CRL. This
+                                  is needed on the puppet CA to accept clients
+                                  from a the puppet CA proxy. (default: false)
+    --puppet-auth-allowed         An array of authenticated nodes allowed to
+                                  access all catalog and node endpoints.
+                                  default to ['$1'] (default: ["$1"])
+    --puppet-server-ca-proxy      The actual server that handles puppet CA.
+                                  Setting this to anything non-empty causes
+                                  the apache vhost to set up a proxy for all
+                                  certificates pointing to the value. (default: nil)
+    --puppet-server-config-version  How to determine the configuration version. When
+                                  using git_repo, by default a git describe
+                                  approach will be installed. (default: nil)
+    --puppet-server-default-manifest  Toggle if default_manifest setting should
+                                  be added to the [main] section (default: false)
+    --puppet-server-default-manifest-content  A string to set the content of the default_manifest
+                                  If set to '' it will not manage the file (default: "")
+    --puppet-server-default-manifest-path  A string setting the path to the default_manifest (default: "/etc/puppet/manifests/default_manifest.pp")
+    --puppet-server-enc-api       What version of enc script to deploy. Valid
+                                  values are 'v2' for latest, and 'v1'
+                                  for Foreman =< 1.2 (default: "v2")
+    --puppet-server-environment-timeout  Timeout for cached compiled catalogs (10s, 5m, ...) (default: nil)
+    --puppet-server-facts         Should foreman receive facts from puppet (default: true)
+    --puppet-server-foreman       Should foreman integration be installed (default: true)
+    --puppet-server-foreman-ssl-ca  SSL CA of the Foreman server (default: nil)
+    --puppet-server-foreman-ssl-cert  Client certificate for authenticating against Foreman server (default: nil)
+    --puppet-server-foreman-ssl-key  Key for authenticating against Foreman server (default: nil)
+    --puppet-server-foreman-url   Foreman URL (default: "https://foreman1.oas.local")
+    --puppet-server-httpd-service  Apache/httpd service name to notify
+                                  on configuration changes. Defaults
+                                  to 'httpd' based on the default
+                                  apache module included with foreman-installer. (default: "httpd")
+    --puppet-server-jvm-config    Specify the puppetserver jvm configuration file. (default: "/etc/sysconfig/puppetserver")
+    --puppet-server-jvm-extra-args  Additional java options to pass through.
+                                  This can be used for Java versions prior to
+                                  Java 8 to specify the max perm space to use:
+                                  For example: '-XX:MaxPermSpace=128m'. (default: "")
+    --puppet-server-jvm-java-bin  Set the default java to use. (default: "/usr/bin/java")
+    --puppet-server-jvm-max-heap-size  Specify the maximum jvm heap space. (default: "2G")
+    --puppet-server-jvm-min-heap-size  Specify the minimum jvm heap space. (default: "2G")
+    --puppet-server-passenger-max-pool  The PassengerMaxPoolSize parameter. If your
+                                  host is low on memory, it may be a good thing
+                                  to lower this. Defaults to 12. (default: 12)
+    --puppet-server-puppet-basedir  Where is the puppet code base located (default: nil)
+    --puppet-server-report-api    What version of report processor to deploy.
+                                  Valid values are 'v2' for latest, and 'v1'
+                                  for Foreman =< 1.2 (default: "v2")
+    --puppet-server-request-timeout  Timeout in node.rb script for fetching
+                                  catalog from Foreman (in seconds). (default: 60)
+    --puppet-server-service-fallback  If passenger is not used, do we want to fallback
+                                  to using the puppetmaster service? Set to false
+                                  if you disabled passenger and you do NOT want to
+                                  use the puppetmaster service. Defaults to true. (default: true)
+    --puppet-server-ssl-dir-manage  Toggle if ssl_dir should be added to the [master]
+                                  configuration section. This is necessary to
+                                  disable in case CA is delegated to a separate instance (default: true)
+
+== puppet::server:
+    --puppet-server               Should a puppet master be installed as well as the client (default: true)
+    --puppet-server-additional-settings  A hash of additional settings.
+                                  Example: {trusted_node_data => true, ordering => 'manifest'} (default: {})
+    --puppet-server-app-root      Directory where the application lives (default: "/etc/puppet/rack")
+    --puppet-server-ca            Provide puppet CA (default: true)
+    --puppet-server-certname      The name to use when handling certificates. (default: "foreman1.oas.local")
+    --puppet-server-common-modules-path  Common modules paths (only when
+                                  $server_git_repo_path and $server_dynamic_environments
+                                  are false) (default: ["/etc/puppet/environments/common", "/etc/puppet/modules", "/usr/share/puppet/modules"])
+    --puppet-server-dir           Puppet configuration directory (default: "/etc/puppet")
+    --puppet-server-directory-environments  Enable directory environments, defaulting to true
+                                  with Puppet 3.6.0 or higher (default: true)
+    --puppet-server-dynamic-environments  Use $environment in the modulepath
+                                  Deprecated when $server_directory_environments is true,
+                                  set $server_environments to [] instead. (default: false)
+    --puppet-server-environments  Environments to setup (creates directories).
+                                  Applies only when $server_dynamic_environments
+                                  is false (default: ["development", "production"])
+    --puppet-server-environments-group  The group owning the environments directory (default: nil)
+    --puppet-server-environments-mode  Environments directory mode. (default: "0755")
+    --puppet-server-environments-owner  The owner of the environments directory (default: "puppet")
+    --puppet-server-envs-dir      Directory that holds puppet environments (default: "/etc/puppet/environments")
+    --puppet-server-external-nodes  External nodes classifier executable (default: "/etc/puppet/node.rb")
+    --puppet-server-git-branch-map  Git branch to puppet env mapping for the
+                                  default post receive hook (default: {})
+    --puppet-server-git-repo      Use git repository as a source of modules (default: false)
+    --puppet-server-git-repo-group  Git repository group (default: "puppet")
+    --puppet-server-git-repo-mode  Git repository mode (default: "0755")
+    --puppet-server-git-repo-path  Git repository path (default: "/var/lib/puppet/puppet.git")
+    --puppet-server-git-repo-user  Git repository user (default: "puppet")
+    --puppet-server-group         Name of the puppetmaster group. (default: "puppet")
+    --puppet-server-http          Should the puppet master listen on HTTP as well as HTTPS.
+                                  Useful for load balancer or reverse proxy scenarios. Note that
+                                  the HTTP puppet master denies access from all clients by default,
+                                  allowed clients must be specified with $server_http_allow. (default: false)
+    --puppet-server-http-allow    Array of allowed clients for the HTTP puppet master. Passed
+                                  to Apache's 'Allow' directive. (default: [])
+    --puppet-server-http-port     Puppet master HTTP port; defaults to 8139. (default: 8139)
+    --puppet-server-implementation  Puppet master implementation, either "master" (traditional
+                                  Ruby) or "puppetserver" (JVM-based) (default: "master")
+    --puppet-server-manifest-path  Path to puppet site.pp manifest (only when
+                                  $server_git_repo_path and $server_dynamic_environments
+                                  are false) (default: "/etc/puppet/manifests")
+    --puppet-server-package       Custom package name for puppet master (default: nil)
+    --puppet-server-parser        Sets the parser to use. Valid options are 'current' or 'future'.
+                                  Defaults to 'current'. (default: "current")
+    --puppet-server-passenger     If set to true, we will configure apache with
+                                  passenger. If set to false, we will enable the
+                                  default puppetmaster service unless
+                                  service_fallback is set to false. See 'Advanced
+                                  server parameters' for more information.
+                                  Only applicable when server_implementation is "master". (default: true)
+    --puppet-server-port          Puppet master port (default: 8140)
+    --puppet-server-post-hook-content  Which template to use for git post hook (default: "puppet/server/post-receive.erb")
+    --puppet-server-post-hook-name  Name of a git hook (default: "post-receive")
+    --puppet-server-puppetdb-host  PuppetDB host (default: nil)
+    --puppet-server-puppetdb-port  PuppetDB port (default: 8081)
+    --puppet-server-puppetdb-swf  PuppetDB soft_write_failure (default: false)
+    --puppet-server-rack-arguments  Arguments passed to rack app ARGV in addition to --confdir and
+                                  --vardir.  The default is an empty array. (default: [])
+    --puppet-server-reports       List of report types to include on the puppetmaster (default: "foreman")
+    --puppet-server-ssl-dir       SSL directory (default: "/var/lib/puppet/ssl")
+    --puppet-server-storeconfigs-backend  Do you use storeconfigs? (note: not required)
+                                  false if you don't, "active_record" for 2.X
+                                  style db, "puppetdb" for puppetdb (default: nil)
+    --puppet-server-strict-variables  if set to true, it will throw parse errors
+                                  when accessing undeclared variables. (default: false)
+    --puppet-server-template      Which template should be used for master
+                                  configuration (default: "puppet/server/puppet.conf.erb")
+    --puppet-server-user          Name of the puppetmaster user. (default: "puppet")
+    --puppet-server-version       Custom package version for puppet master (default: nil)

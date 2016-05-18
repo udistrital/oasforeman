@@ -1,20 +1,41 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require "open-uri"
+
 proxy = ENV["http_proxy"] || ""
 
 local_domain = "oas.local"
 foreman_ip = "192.168.12.42"
 foreman_hostname = "foreman1"
 foreman_fqdn = "#{foreman_hostname}.#{local_domain}"
+oauth_consumer_key = "wingaethe6dah0ohcemipu3aiduu7Ue5"
+oauth_consumer_secret = "aum7ohh8Kahm6ooj9lae6pi0roapaira"
+reverse_zone = "12.168.192.in-addr.arpa"
 
 foreman_installer_options = [
   "-v",
   "--detailed-exitcodes",
-  "--enable-foreman-plugin-ansible",
   "--enable-foreman-compute-ovirt",
   "--enable-foreman-compute-ec2",
-  "--foreman-foreman-url=https://#{foreman_ip}",
+  "--enable-foreman-plugin-puppetdb",
+  "--foreman-foreman-url=https://#{foreman_fqdn}",
+  "--enable-foreman-proxy",
+  "--foreman-proxy-tftp=true",
+  "--foreman-proxy-tftp-servername=#{foreman_ip}",
+  "--foreman-proxy-dhcp=true",
+  "--foreman-proxy-dhcp-interface=$(/usr/local/bin/get_interface.sh -i #{foreman_ip})",
+  "--foreman-proxy-dhcp-gateway=",
+  "--foreman-proxy-dhcp-range=",
+  "--foreman-proxy-dhcp-nameservers=$(/usr/local/bin/get_nameserver.sh)",
+  "--foreman-proxy-dns=true",
+  "--foreman-proxy-dns-interface=$(/usr/local/bin/get_interface.sh -i #{foreman_ip})",
+  "--foreman-proxy-dns-zone=#{local_domain}",
+  "--foreman-proxy-dns-reverse=#{reverse_zone}",
+  "--foreman-proxy-dns-forwarders=$(/usr/local/bin/get_nameserver.sh)",
+  "--foreman-proxy-foreman-base-url=https://#{foreman_fqdn}",
+  "--foreman-proxy-oauth-consumer-key=#{oauth_consumer_key}",
+  "--foreman-proxy-oauth-consumer-secret=#{oauth_consumer_secret}",
 ]
 
 foreman_installer_command = "sudo foreman-installer #{foreman_installer_options.join(" ")}"
@@ -25,9 +46,20 @@ hosts_content = <<-EOF
 #{foreman_ip} #{foreman_fqdn} #{foreman_hostname}
 EOF
 
-hosts_file = Tempfile.new('hosts')
+hosts_file = Tempfile.new("hosts")
 hosts_file.write(hosts_content)
 hosts_file.close
+
+# get jq if needed
+if not File.exists? "tmp/jq-linux64"
+  FileUtils.mkdir_p "tmp"
+  puts "Getting jq"
+  File.open("tmp/jq-linux64", "wb") do |local_jq|
+    open("https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64", "rb") do |remote_jq|
+     local_jq.write(remote_jq.read)
+    end
+  end
+end
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -53,7 +85,7 @@ Vagrant.configure(2) do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  config.vm.network "private_network", ip: foreman_ip
+  config.vm.network "private_network", ip: foreman_ip #nic2
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -96,6 +128,17 @@ Vagrant.configure(2) do |config|
   #   sudo apt-get install -y apache2
   # SHELL
 
+  # put host-only nic in promiscuous mode
+  config.vm.provider "virtualbox" do |vbox|
+    vbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+  end
+
+  # install jq
+  config.vm.provision "file", source: "tmp/jq-linux64", destination: "/tmp/jq-linux64"
+  config.vm.provision "shell", inline: "sudo chown -v root:root /tmp/jq-linux64"
+  config.vm.provision "shell", inline: "sudo chmod -v +x /tmp/jq-linux64"
+  config.vm.provision "shell", inline: "sudo mv -v /tmp/jq-linux64 /usr/local/bin/jq"
+
   # host naming
   config.vm.hostname = foreman_fqdn
   config.vm.provision "file", source: hosts_file.path, destination: "/tmp/hosts"
@@ -116,7 +159,8 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
   config.vm.provision "shell", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
   config.vm.provision "shell", inline: "sudo yum -y -v install foreman-installer"
-  # execute twice to ensure convergency
+
+  # foreman install, execute twice to ensure convergency
   config.vm.provision "shell", inline: "#{foreman_installer_command};#{foreman_installer_command}"
 
 end
