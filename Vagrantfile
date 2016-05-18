@@ -2,18 +2,26 @@
 # vi: set ft=ruby :
 
 require "open-uri"
+require "json"
+
+if not File.exists? "tmp"
+  FileUtils.mkdir_p "tmp"
+end
 
 proxy = ENV["http_proxy"] || ""
 
 local_domain = "oas.local"
+local_domain_subnet_name = "oas-local"
 foreman_ip = "192.168.12.42"
+foreman_provision_ip = "192.168.12.42"
+foreman_provision_Network = "192.168.12.0"
+foreman_provision_Mask = "255.255.255.0"
 foreman_hostname = "foreman1"
 foreman_fqdn = "#{foreman_hostname}.#{local_domain}"
-oauth_consumer_key = "wingaethe6dah0ohcemipu3aiduu7Ue5"
-oauth_consumer_secret = "aum7ohh8Kahm6ooj9lae6pi0roapaira"
 reverse_zone = "12.168.192.in-addr.arpa"
 
-foreman_installer_options = [
+# foreman installer options for first run
+foreman_installer_options_1 = [
   "-v",
   "--detailed-exitcodes",
   "--enable-foreman-compute-ovirt",
@@ -22,25 +30,28 @@ foreman_installer_options = [
   "--foreman-foreman-url=https://#{foreman_fqdn}",
   "--enable-foreman-proxy",
   "--foreman-proxy-tftp=true",
-  "--foreman-proxy-tftp-servername=#{foreman_ip}",
+  "--foreman-proxy-tftp-servername=#{foreman_provision_ip}",
   "--foreman-proxy-dhcp=true",
-  "--foreman-proxy-dhcp-interface=$(/usr/local/bin/get_interface.sh -i #{foreman_ip})",
+  "--foreman-proxy-dhcp-interface=$(/usr/local/bin/get_interface.sh -i #{foreman_provision_ip})",
   "--foreman-proxy-dhcp-gateway=",
   "--foreman-proxy-dhcp-range=",
   "--foreman-proxy-dhcp-nameservers=$(/usr/local/bin/get_nameserver.sh)",
   "--foreman-proxy-dns=true",
-  "--foreman-proxy-dns-interface=$(/usr/local/bin/get_interface.sh -i #{foreman_ip})",
+  "--foreman-proxy-dns-interface=$(/usr/local/bin/get_interface.sh -i #{foreman_provision_ip})",
   "--foreman-proxy-dns-zone=#{local_domain}",
   "--foreman-proxy-dns-reverse=#{reverse_zone}",
   "--foreman-proxy-dns-forwarders=$(/usr/local/bin/get_nameserver.sh)",
   "--foreman-proxy-foreman-base-url=https://#{foreman_fqdn}",
-  "--foreman-proxy-oauth-consumer-key=#{oauth_consumer_key}",
-  "--foreman-proxy-oauth-consumer-secret=#{oauth_consumer_secret}",
 ]
 
-foreman_installer_command = "sudo foreman-installer #{foreman_installer_options.join(" ")}"
+# foreman installer options for second run
+foreman_installer_options_2 = foreman_installer_options_1 + [
+  "--foreman-proxy-oauth-consumer-key=$(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param oauth_consumer_key)",
+  "--foreman-proxy-oauth-consumer-secret=$(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param oauth_consumer_secret)",
+]
 
-puts "Foreman Installer Command: #{foreman_installer_command}"
+foreman_installer_command_1 = "sudo foreman-installer #{foreman_installer_options_1.join(" ")}"
+foreman_installer_command_2 = "sudo foreman-installer #{foreman_installer_options_2.join(" ")}"
 
 hosts_content = <<-EOF
 127.0.0.1     localhost localhost.localdomain localhost4 localhost4.localdomain4
@@ -48,13 +59,23 @@ hosts_content = <<-EOF
 #{foreman_ip} #{foreman_fqdn} #{foreman_hostname}
 EOF
 
-hosts_file = Tempfile.new("hosts")
+hosts_file = File.open("tmp/hosts", "w")
 hosts_file.write(hosts_content)
 hosts_file.close
 
+subnets_content = {
+  local_domain_subnet_name => {
+    "Network" => foreman_provision_Network,
+    "Mask" => foreman_provision_Mask,
+  },
+}
+
+subnets_file = File.open("tmp/foreman_subnets.json", "w")
+subnets_file.write(JSON.generate(subnets_content))
+subnets_file.close
+
 # get jq if needed
 if not File.exists? "tmp/jq-linux64"
-  FileUtils.mkdir_p "tmp"
   puts "Getting jq"
   File.open("tmp/jq-linux64", "wb") do |local_jq|
     open("https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64", "rb") do |remote_jq|
@@ -162,7 +183,14 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
   config.vm.provision "shell", inline: "sudo yum -y -v install foreman-installer"
 
-  # foreman install, execute twice to ensure convergency
-  config.vm.provision "shell", inline: "#{foreman_installer_command};#{foreman_installer_command}"
+  # foreman install, execute thrice to ensure convergency
+  config.vm.provision "shell", inline: "#{foreman_installer_command_1};#{foreman_installer_command_2};#{foreman_installer_command_2}"
 
+  # final foreman provision
+  config.vm.provision "shell", inline: "sudo puppet agent --test;sudo puppet agent --test"
+
+  # foreman subnets provision
+  config.vm.provision "file", source: subnets_file.path, destination: "/tmp/foreman_subnets.json"
+  config.vm.provision "shell", inline: "sudo /usr/local/bin/ensure_foreman_subnets.rb --source /tmp/foreman_subnets.json"
+  config.vm.provision "shell", inline: "rm -v /tmp/foreman_subnets.json"
 end
