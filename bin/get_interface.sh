@@ -1,5 +1,7 @@
 #!/bin/bash
 
+PATH="$PATH:/usr/local/bin"
+
 set -eu
 
 while getopts ":i:" opt; do
