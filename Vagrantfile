@@ -16,6 +16,7 @@ foreman_ip = "192.168.12.42"
 foreman_provision_ip = "192.168.12.42"
 foreman_provision_Network = "192.168.12.0"
 foreman_provision_Mask = "255.255.255.0"
+foreman_provision_Domains = local_domain
 foreman_hostname = "foreman1"
 foreman_fqdn = "#{foreman_hostname}.#{local_domain}"
 reverse_zone = "12.168.192.in-addr.arpa"
@@ -66,13 +67,22 @@ hosts_file.close
 subnets_content = {
   local_domain_subnet_name => {
     "Network" => foreman_provision_Network,
-    "Mask" => foreman_provision_Mask,
+    "Mask"    => foreman_provision_Mask,
+    "Domains" => foreman_provision_Domains,
   },
 }
 
 subnets_file = File.open("tmp/foreman_subnets.json", "w")
 subnets_file.write(JSON.generate(subnets_content))
 subnets_file.close
+
+hostgroups_content = {
+  "grupo-infraestructura" => {}
+}
+
+hostgroups_file = File.open("tmp/foreman_hostgroups.json", "w")
+hostgroups_file.write(JSON.generate(hostgroups_content))
+hostgroups_file.close
 
 # get jq if needed
 if not File.exists? "tmp/jq-linux64"
@@ -193,4 +203,9 @@ Vagrant.configure(2) do |config|
   config.vm.provision "file", source: subnets_file.path, destination: "/tmp/foreman_subnets.json"
   config.vm.provision "shell", inline: "sudo /usr/local/bin/ensure_foreman_subnets.rb --source /tmp/foreman_subnets.json"
   config.vm.provision "shell", inline: "rm -v /tmp/foreman_subnets.json"
+
+  # foreman hostgroups provision
+  config.vm.provision "file", source: hostgroups_file.path, destination: "/tmp/foreman_hostgroups.json"
+  config.vm.provision "shell", inline: "sudo /usr/local/bin/ensure_foreman_hostgroups.rb --source /tmp/foreman_hostgroups.json"
+  config.vm.provision "shell", inline: "rm -v /tmp/foreman_hostgroups.json"
 end
