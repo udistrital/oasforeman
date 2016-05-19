@@ -51,18 +51,22 @@ unset http_proxy
 
 Solucionar problemas.
 
-Para actualizar el servidor de Foreman.
+### Actualizar el servidor de Foreman
 
 ```
 vagrant provision
 ```
 
-Para borrar todo y comenzar de cero.
+### Borrar todo y comenzar de cero
 
 ```
 vagrant destroy -f
 vagrant up
 ```
+
+### Archivos de log relevantes
+
+ * `/var/log/boot.log` - Archivo de log de DHCP
 
 ## ¿Por qué esto es relevante?
 

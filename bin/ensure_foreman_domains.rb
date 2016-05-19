@@ -13,19 +13,19 @@ OptionParser.new do |opts|
 end.parse!
 
 if File.exists? options[:source]
-  hostgroups = JSON.parse(File.open(options[:source]).read)
-  hostgroups.each do |hg_name, hg_params|
-    hammer_cmd = "#{HAMMER} hostgroup info '--name=#{hg_name}'"
+  domains = JSON.parse(File.open(options[:source]).read)
+  domains.each do |domain_name, domain_params|
+    hammer_cmd = "#{HAMMER} domain info '--name=#{domain_name}'"
     puts "Running #{hammer_cmd}"
     `#{hammer_cmd}`
-    hammer_cmd_parts = ["#{HAMMER} hostgroup"]
+    hammer_cmd_parts = ["#{HAMMER} domain"]
     if not $?.success?
       hammer_cmd_parts.push "create"
     else
       hammer_cmd_parts.push "update"
     end
-    hammer_cmd_parts.push "'--name=#{hg_name}'"
-    hg_params.each do |param_name, param_value|
+    hammer_cmd_parts.push "'--name=#{domain_name}'"
+    domain_params.each do |param_name, param_value|
       hammer_cmd_parts.push("'--#{param_name}=#{param_value}'")
     end
     hammer_cmd = hammer_cmd_parts.join(" ")
