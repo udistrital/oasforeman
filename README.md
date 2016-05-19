@@ -44,10 +44,12 @@ unset http_proxy
     ```
     echo 192.168.12.42 foreman1.oas.local foreman1 | sudo tee -a /etc/hosts
     ```
-1. Visite [foreman1.oas.local](https:/foreman1.oas.local/) o https://192.168.12.42/ en su navegador (la verificación de cerficado fallará sin embargo deberá continuar al sitio).
+1. Visite [foreman1.oas.local](https://foreman1.oas.local/) o [192.168.12.42](https://192.168.12.42/) en su navegador (la verificación de cerficado fallará sin embargo deberá continuar al sitio).
 1. Use las credenciales guardadas del paso anterior para iniciar sesión en Foreman (`admin / CONTRASEÑA`).
 
 ## Troubleshooting
+
+Solucionar problemas.
 
 Para actualizar el servidor de Foreman.
 
