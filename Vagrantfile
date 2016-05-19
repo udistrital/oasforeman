@@ -84,6 +84,23 @@ hostgroups_file = File.open("tmp/foreman_hostgroups.json", "w")
 hostgroups_file.write(JSON.generate(hostgroups_content))
 hostgroups_file.close
 
+oses_content = {
+  "CentOS" => [
+    {
+      "Major version" => "7",
+      "Minor version" => "1",
+    },
+    {
+      "Major version" => "7",
+      "Minor version" => "2",
+    },
+  ],
+}
+
+oses_file = File.open("tmp/foreman_oses.json", "w")
+oses_file.write(JSON.generate(oses_content))
+oses_file.close
+
 # get jq if needed
 if not File.exists? "tmp/jq-linux64"
   puts "Getting jq"
@@ -168,44 +185,49 @@ Vagrant.configure(2) do |config|
 
   # install jq
   config.vm.provision "file", source: "tmp/jq-linux64", destination: "/tmp/jq-linux64"
-  config.vm.provision "shell", inline: "sudo chown -v root:root /tmp/jq-linux64"
-  config.vm.provision "shell", inline: "sudo chmod -v +x /tmp/jq-linux64"
-  config.vm.provision "shell", inline: "sudo mv -v /tmp/jq-linux64 /usr/local/bin/jq"
+  config.vm.provision "shell", name: "install jq 1/3", inline: "sudo chown -v root:root /tmp/jq-linux64"
+  config.vm.provision "shell", name: "install jq 2/3", inline: "sudo chmod -v +x /tmp/jq-linux64"
+  config.vm.provision "shell", name: "install jq 3/3", inline: "sudo mv -v /tmp/jq-linux64 /usr/local/bin/jq"
 
   # host naming
   config.vm.hostname = foreman_fqdn
   config.vm.provision "file", source: hosts_file.path, destination: "/tmp/hosts"
-  config.vm.provision "shell", inline: "sudo tee /etc/hosts < /tmp/hosts"
-  config.vm.provision "shell", inline: "rm -v /tmp/hosts"
+  config.vm.provision "shell", name: "host naming 1/2", inline: "sudo tee /etc/hosts < /tmp/hosts"
+  config.vm.provision "shell", name: "host naming 2/2", inline: "rm -v /tmp/hosts"
 
-  # host tools
+  # tools
   config.vm.provision "file", source: "bin", destination: "/tmp"
-  config.vm.provision "shell", inline: "sudo chown -v root:root /tmp/bin/*"
-  config.vm.provision "shell", inline: "sudo mv -v /tmp/bin/* /usr/local/bin"
-  config.vm.provision "shell", inline: "rm -rv /tmp/bin"
+  config.vm.provision "shell", name: "tools 1/3", inline: "sudo chown -v root:root /tmp/bin/*"
+  config.vm.provision "shell", name: "tools 2/3", inline: "sudo mv -v /tmp/bin/* /usr/local/bin"
+  config.vm.provision "shell", name: "tools 3/3", inline: "rm -rv /tmp/bin"
 
-  # set environment
-  config.vm.provision "shell", inline: "/usr/local/bin/set_environment.sh -n http_proxy -v '#{proxy}'"
-  config.vm.provision "shell", inline: "/usr/local/bin/set_environment.sh -n https_proxy -v '#{proxy}'"
+  # environment
+  config.vm.provision "shell", name: "environment 1/2", inline: "/usr/local/bin/set_environment.sh -n http_proxy -v '#{proxy}'"
+  config.vm.provision "shell", name: "environment 2/2", inline: "/usr/local/bin/set_environment.sh -n https_proxy -v '#{proxy}'"
 
   # foreman provision
-  config.vm.provision "shell", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
-  config.vm.provision "shell", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
-  config.vm.provision "shell", inline: "sudo yum -y -v install foreman-installer"
+  config.vm.provision "shell", name: "foreman provision 1/3", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
+  config.vm.provision "shell", name: "foreman provision 2/3", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
+  config.vm.provision "shell", name: "foreman provision 3/3", inline: "sudo yum -y -v install foreman-installer"
 
-  # foreman install, execute thrice to ensure convergency
-  config.vm.provision "shell", inline: "#{foreman_installer_command_1};#{foreman_installer_command_2};#{foreman_installer_command_2}"
+  # foreman install, execute thrice (or maybe twice) to ensure convergency
+  config.vm.provision "shell", name: "foreman install", inline: "#{foreman_installer_command_1};#{foreman_installer_command_2}||#{foreman_installer_command_2}"
 
-  # final foreman provision
-  config.vm.provision "shell", inline: "sudo puppet agent --test;sudo puppet agent --test"
+  # puppet run, execute twice to ensure convergency
+  config.vm.provision "shell", name: "puppet run", inline: "sudo puppet agent --test;sudo puppet agent --test"
 
   # foreman subnets provision
   config.vm.provision "file", source: subnets_file.path, destination: "/tmp/foreman_subnets.json"
-  config.vm.provision "shell", inline: "sudo /usr/local/bin/ensure_foreman_subnets.rb --source /tmp/foreman_subnets.json"
-  config.vm.provision "shell", inline: "rm -v /tmp/foreman_subnets.json"
+  config.vm.provision "shell", name: "subnets 1/2", inline: "sudo /usr/local/bin/ensure_foreman_subnets.rb --source /tmp/foreman_subnets.json"
+  config.vm.provision "shell", name: "subnets 2/2", inline: "rm -v /tmp/foreman_subnets.json"
 
   # foreman hostgroups provision
   config.vm.provision "file", source: hostgroups_file.path, destination: "/tmp/foreman_hostgroups.json"
-  config.vm.provision "shell", inline: "sudo /usr/local/bin/ensure_foreman_hostgroups.rb --source /tmp/foreman_hostgroups.json"
-  config.vm.provision "shell", inline: "rm -v /tmp/foreman_hostgroups.json"
+  config.vm.provision "shell", name: "hostgroups 1/2", inline: "sudo /usr/local/bin/ensure_foreman_hostgroups.rb --source /tmp/foreman_hostgroups.json"
+  config.vm.provision "shell", name: "hostgroups 2/2", inline: "rm -v /tmp/foreman_hostgroups.json"
+
+  # foreman oses provision
+  config.vm.provision "file", source: oses_file.path, destination: "/tmp/foreman_oses.json"
+  config.vm.provision "shell", name: "oses 1/2", inline: "sudo /usr/local/bin/ensure_foreman_oses.rb --source /tmp/foreman_oses.json"
+  config.vm.provision "shell", name: "oses 2/2", inline: "rm -v /tmp/foreman_oses.json"
 end
