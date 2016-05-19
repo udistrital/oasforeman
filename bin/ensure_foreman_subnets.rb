@@ -26,14 +26,13 @@ if File.exists? options[:source]
     end
     hammer_cmd_parts.push "'--name=#{subnet_name}'"
     subnet_params.each do |param_name, param_value|
+      final_param_value = param_value
       if param_value.kind_of? Hash
         if param_value["command"]
           inner_hammer_cmd = param_value["command"]
           puts "command> Running #{inner_hammer_cmd}"
           final_param_value = `#{inner_hammer_cmd}`.chop
         end
-      else
-        final_param_value = param_value
       end
       hammer_cmd_parts.push("'--#{param_name}=#{final_param_value}'")
     end

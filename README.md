@@ -26,12 +26,13 @@ unset http_proxy
 
 ## ¿Cómo usar esto?
 
+1. Necesita un equipo con al menos 4GB libres de memoria
 1. Descargue [Vagrant](https://www.vagrantup.com/) y [VirtualBox](https://www.virtualbox.org/)
-1. Ejecute `vagrant up` en este directorio, guarde la información de acceso a Foreman.
+1. Ejecute `vagrant up` en este directorio y guarde la información de acceso a Foreman.
 
     ```
-    * Foreman is running at https://192.168.12.42
-        Initial credentials are admin / CONTRASEÑA
+    Iniciar sesión en https://foreman1.oas.local
+    La contraseña inicial del usuario admin es: CONTRASEÑA
     ```
 1. Por conveniencia puede agregar estas líneas a su archivo `/etc/hosts`.
 
@@ -45,7 +46,7 @@ unset http_proxy
     echo 192.168.12.42 foreman1.oas.local foreman1 | sudo tee -a /etc/hosts
     ```
 1. Visite [foreman1.oas.local](https://foreman1.oas.local/) o [192.168.12.42](https://192.168.12.42/) en su navegador (la verificación de cerficado fallará sin embargo deberá continuar al sitio).
-1. Use las credenciales guardadas del paso anterior para iniciar sesión en Foreman (`admin / CONTRASEÑA`).
+1. Use las credenciales guardadas del paso anterior para iniciar sesión en Foreman (User: admin / Password: CONTRASEÑA).
 
 ## Troubleshooting
 
@@ -67,10 +68,20 @@ vagrant up
 ### Archivos de log relevantes
 
  * `/var/log/boot.log` - Archivo de log de DHCP
+ * `/var/log/messages` - Archivo de log del sistema operativo
+ * `/var/log/foreman/production.log` - Archivo de log principal de Foreman
+ * `/var/log/foreman-proxy/proxy.log` - Archivo de log del proxy de Foreman
+
+Ver todos a la vez con:
+
+```
+tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log /var/log/foreman-proxy/proxy.log
+```
 
 ## ¿Por qué esto es relevante?
 
-1. Porque ayuda a probar nuevas funcionalidades en un ambiente seguro.
+1. Porque ayuda a probar nuevas funcionalidades en un ambiente aislado.
 1. Porque define claramente el proceso de aprovisionamiento del servidor Foreman.
 1. Porque permite rapidamente crear un nuevo servidor de Foreman para casos de emergencia.
 1. Porque permite trabajar remotamente en temas de aprovisionamiento (para usuarios remotos).
+1. Porque es el primer paso para definir una infraestructura basada en código.

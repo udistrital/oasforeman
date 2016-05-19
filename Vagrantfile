@@ -14,18 +14,22 @@ proxy = ENV["http_proxy"] || ""
 foreman_ip = "192.168.12.42"
 foreman_hostname = "foreman1"
 foreman_local_domain = "oas.local"
-foreman_fqdn = "#{foreman_hostname}.#{foreman_local_domain}"
 
 # settings for provisioning with foreman
 foreman_provision_ip = "192.168.12.42"
 foreman_provision_network = "192.168.12.0"
 foreman_provision_mask = "255.255.255.0"
 foreman_provision_domain = "oas.local"
-foreman_provision_domains = [ foreman_provision_domain ].join(",")
 foreman_provision_reverse_zone = "12.168.192.in-addr.arpa"
 foreman_provision_subnet_name = "oas-local"
 foreman_provision_range = "192.168.12.201 192.168.12.250"
-foreman_provision_gateway = "192.168.12.1"
+foreman_provision_gateway = ""
+foreman_provision_extra_domains = []
+
+# calculated settings
+foreman_provision_domains = ([ foreman_provision_domain ] + foreman_provision_extra_domains).join(",")
+foreman_fqdn = "#{foreman_hostname}.#{foreman_local_domain}"
+foreman_url = "https://#{foreman_fqdn}"
 
 # foreman installer options for first run
 foreman_installer_options_1 = [
@@ -33,7 +37,7 @@ foreman_installer_options_1 = [
   "--detailed-exitcodes",
   "--enable-foreman-compute-ovirt",
   "--enable-foreman-compute-ec2",
-  "--foreman-foreman-url='https://#{foreman_fqdn}'",
+  "--foreman-foreman-url='#{foreman_url}'",
   "--puppet-server-git-repo=true",
   "--enable-foreman-plugin-bootdisk",
   "--enable-foreman-proxy",
@@ -41,15 +45,15 @@ foreman_installer_options_1 = [
   "--foreman-proxy-tftp-servername='#{foreman_provision_ip}'",
   "--foreman-proxy-dhcp=true",
   "--foreman-proxy-dhcp-interface=\"$(/usr/local/bin/get_interface.sh -i '#{foreman_provision_ip}')\"",
-  "--foreman-proxy-dhcp-gateway=",
-  "--foreman-proxy-dhcp-range=' '",
+  "--foreman-proxy-dhcp-gateway='#{foreman_provision_gateway}'",
+  "--foreman-proxy-dhcp-range='#{foreman_provision_range}'",
   "--foreman-proxy-dhcp-nameservers=\"$(/usr/local/bin/get_nameserver.sh)\"",
   "--foreman-proxy-dns=true",
   "--foreman-proxy-dns-interface=$(/usr/local/bin/get_interface.sh -i '#{foreman_provision_ip}')",
   "--foreman-proxy-dns-zone='#{foreman_provision_domain}'",
   "--foreman-proxy-dns-reverse='#{foreman_provision_reverse_zone}'",
   "--foreman-proxy-dns-forwarders=$(/usr/local/bin/get_nameserver.sh)",
-  "--foreman-proxy-foreman-base-url='https://#{foreman_fqdn}'",
+  "--foreman-proxy-foreman-base-url='#{foreman_url}'",
 ]
 
 # foreman installer options for second run
@@ -72,8 +76,9 @@ hosts_file.write(hosts_content)
 hosts_file.close
 
 domains_content = {
-  foreman_local_domain => {},
-  "vagrant.local" => {},
+  foreman_local_domain => {
+    "dns" => foreman_fqdn,
+  },
 }
 
 domains_file = File.open("tmp/foreman_domains.json", "w")
@@ -88,11 +93,6 @@ subnets_content = {
     "dhcp-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq .Id" }, # quieres mejorar esto?
     "dns-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq .Id" },
     "tftp-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq .Id" },
-  },
-  "vagrant-local" => {
-    "network" => "192.168.156.0",
-    "mask"    => "255.255.254.0",
-    "domains" => "vagrant.local",
   },
 }
 
@@ -130,13 +130,20 @@ architectures_file = File.open("tmp/foreman_architectures.json", "w")
 architectures_file.write(JSON.generate(architectures_content))
 architectures_file.close
 
+default_partition_table = "Kickstart default"
+
+additional_partition_tables = [
+]
+
+all_partition_tables = [ default_partition_table ] + additional_partition_tables
+
 hostgroups_content = {
   "grupo-oas" => {
     "architecture" => "x86_64",
     "domain" => foreman_provision_domain,
     "medium" => "CentOS mirror", # sujeto a cambio en cuanto se tenga katello
     "operatingsystem" => "CentOS 7.2",
-    "partition-table" => "Kickstart default",
+    "partition-table" => default_partition_table,
     "puppet-ca-proxy" => foreman_fqdn,
     "puppet-proxy" => foreman_fqdn,
     "root-pass" => "oasmaster",
@@ -171,29 +178,20 @@ hostgroups_file = File.open("tmp/foreman_hostgroups.json", "w")
 hostgroups_file.write(JSON.generate(hostgroups_content))
 hostgroups_file.close
 
+default_config_templates = [
+  "PXELinux chain iPXE",
+  "Kickstart default iPXE",
+  "Kickstart default",
+  "Kickstart default finish",
+  "Kickstart default user data",
+]
+
+additional_config_templates = [
+]
+
+all_config_templates = default_config_templates + additional_config_templates
+
 oses_content = {
-  "CentOS 7.0" => {
-      "name" => "CentOS",
-      "major" => "7",
-      "minor" => "0",
-      "architectures" => "i386,x86_64",
-      "family" => "Redhat",
-      "media" => "CentOS mirror",
-      "partition-tables" => "Kickstart default",
-      "provisioning-templates" => "Kickstart default PXELinux,Kickstart default,Kickstart default finish,Kickstart default user data,Kickstart default iPXE",
-      "config-templates" => "Kickstart default PXELinux,Kickstart default,Kickstart default finish,Kickstart default user data,Kickstart default iPXE",
-  },
-  "CentOS 7.1" => {
-      "name" => "CentOS",
-      "major" => "7",
-      "minor" => "1",
-      "architectures" => "i386,x86_64",
-      "family" => "Redhat",
-      "media" => "CentOS mirror",
-      "partition-tables" => "Kickstart default",
-      "provisioning-templates" => "Kickstart default PXELinux,Kickstart default,Kickstart default finish,Kickstart default user data,Kickstart default iPXE",
-      "config-templates" => "Kickstart default PXELinux,Kickstart default,Kickstart default finish,Kickstart default user data,Kickstart default iPXE",
-  },
   "CentOS 7.2" => {
       "name" => "CentOS",
       "major" => "7",
@@ -201,15 +199,28 @@ oses_content = {
       "architectures" => "i386,x86_64",
       "family" => "Redhat",
       "media" => "CentOS mirror",
-      "partition-tables" => "Kickstart default",
-      "provisioning-templates" => "Kickstart default PXELinux,Kickstart default,Kickstart default finish,Kickstart default user data",
-      "config-templates" => "Kickstart default PXELinux,Kickstart default,Kickstart default finish,Kickstart default user data",
+      "partition-tables" => all_partition_tables.join(","),
+      "config-templates" => all_config_templates.join(",")
   },
 }
 
 oses_file = File.open("tmp/foreman_oses.json", "w")
 oses_file.write(JSON.generate(oses_content))
 oses_file.close
+
+default_config_templates_params =  default_config_templates.map do |config_template|
+  {
+    "config-template-id" => {
+      "command" => "hammer --output=json template info --name '#{config_template}'|/usr/local/bin/jq .Id"
+    }
+  }
+end
+
+os_default_templates_content = { "CentOS 7.2" => default_config_templates_params }
+
+os_default_templates_file = File.open("tmp/foreman_os_default_templates.json", "w")
+os_default_templates_file.write(JSON.generate(os_default_templates_content))
+os_default_templates_file.close
 
 # get jq if needed
 if not File.exists? "tmp/jq-linux64"
@@ -359,6 +370,11 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", name: "oses 1/2", inline: "sudo /usr/local/bin/ensure_foreman_oses.rb --source /tmp/foreman_oses.json"
   config.vm.provision "shell", name: "oses 2/2", inline: "rm -v /tmp/foreman_oses.json"
 
+  # foreman os default templates provision
+  config.vm.provision "file", source: os_default_templates_file.path, destination: "/tmp/foreman_os_default_templates.json"
+  config.vm.provision "shell", name: "os default templates 1/2", inline: "sudo /usr/local/bin/ensure_foreman_os_default_templates.rb --source /tmp/foreman_os_default_templates.json"
+  config.vm.provision "shell", name: "os default templates 2/2", inline: "rm -v /tmp/foreman_os_default_templates.json"
+
   # foreman hostgroups provision
   config.vm.provision "file", source: hostgroups_file.path, destination: "/tmp/foreman_hostgroups.json"
   config.vm.provision "shell", name: "hostgroups 1/2", inline: "sudo /usr/local/bin/ensure_foreman_hostgroups.rb --source /tmp/foreman_hostgroups.json"
@@ -366,4 +382,10 @@ Vagrant.configure(2) do |config|
 
   # generate pxe
   config.vm.provision "shell", name: "generate pxe", inline: "sudo hammer template build-pxe-default"
+
+  # show the url and the generated admin password
+  config.vm.provision "shell", name: "fin", inline: <<-FIN
+    echo Iniciar sesión en #{foreman_url}
+    echo La contraseña inicial del usuario admin es: $(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param admin_password)
+  FIN
 end
