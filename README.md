@@ -75,7 +75,7 @@ vagrant up
 Ver todos a la vez con:
 
 ```
-tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log /var/log/foreman-proxy/proxy.log
+sudo tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log /var/log/foreman-proxy/proxy.log
 ```
 
 ## ¿Por qué esto es relevante?

@@ -47,7 +47,7 @@ foreman_installer_options_1 = [
   "--foreman-proxy-dhcp-interface=\"$(/usr/local/bin/get_interface.sh -i '#{foreman_provision_ip}')\"",
   "--foreman-proxy-dhcp-gateway='#{foreman_provision_gateway}'",
   "--foreman-proxy-dhcp-range='#{foreman_provision_range}'",
-  "--foreman-proxy-dhcp-nameservers=\"$(/usr/local/bin/get_nameserver.sh)\"",
+  "--foreman-proxy-dhcp-nameservers='#{foreman_provision_ip}'",
   "--foreman-proxy-dns=true",
   "--foreman-proxy-dns-interface=$(/usr/local/bin/get_interface.sh -i '#{foreman_provision_ip}')",
   "--foreman-proxy-dns-zone='#{foreman_provision_domain}'",
@@ -149,6 +149,11 @@ hostgroups_content = {
     "root-pass" => "oasmaster",
     "subnet" => foreman_provision_subnet_name,
   },
+  "grupo-bootstrap" => {
+    "environment" => "plataforma",
+    "parent" => "grupo-oas",
+    "operatingsystem" => "Bootstrap CentOS 7.2",
+  },
   "grupo-plataforma" => {
     "environment" => "plataforma",
     "parent" => "grupo-oas",
@@ -168,9 +173,7 @@ hostgroups_content = {
 #  --puppet-class-ids PUPPETCLASS_IDS      List of puppetclass ids
 #                                          Comma separated list of values.
 #  --puppet-classes PUPPET_CLASS_NAMES     Comma separated list of values.
-#  --puppet-proxy PUPPET_PROXY_NAME        Name of puppet proxy
-#  --puppet-proxy-id PUPPET_PROXY_ID       Puppet proxy ID
-#  --realm REALM_NAME                      Name to search by => (inclusión sujeta a cambio cuando segun disponibilidad de freeipa)
+#  --realm REALM_NAME                      Name to search by => (inclusión sujeta a cambio segun disponibilidad de freeipa)
 #  --realm-id REALM_ID                     Numerical ID or realm name
 }
 
@@ -178,9 +181,16 @@ hostgroups_file = File.open("tmp/foreman_hostgroups.json", "w")
 hostgroups_file.write(JSON.generate(hostgroups_content))
 hostgroups_file.close
 
-default_config_templates = [
+bootstrap_pxe_config_templates = [
+  "Kickstart default PXELinux",
+]
+
+default_pxe_config_templates = [
   "PXELinux chain iPXE",
   "Kickstart default iPXE",
+]
+
+default_provision_config_templates = [
   "Kickstart default",
   "Kickstart default finish",
   "Kickstart default user data",
@@ -189,13 +199,26 @@ default_config_templates = [
 additional_config_templates = [
 ]
 
-all_config_templates = default_config_templates + additional_config_templates
+bootstrap_config_templates = bootstrap_pxe_config_templates + default_provision_config_templates
+default_config_templates   =   default_pxe_config_templates + default_provision_config_templates
+
+all_config_templates = bootstrap_pxe_config_templates + default_pxe_config_templates + default_provision_config_templates + additional_config_templates
 
 oses_content = {
   "CentOS 7.2" => {
       "name" => "CentOS",
       "major" => "7",
-      "minor" => "2",
+      "minor" => "2.1511",
+      "architectures" => "i386,x86_64",
+      "family" => "Redhat",
+      "media" => "CentOS mirror",
+      "partition-tables" => all_partition_tables.join(","),
+      "config-templates" => all_config_templates.join(",")
+  },
+  "Boostrap CentOS 7.2" => {
+      "name" => "CentOS",
+      "major" => "7",
+      "minor" => "2.1511",
       "architectures" => "i386,x86_64",
       "family" => "Redhat",
       "media" => "CentOS mirror",
@@ -208,6 +231,14 @@ oses_file = File.open("tmp/foreman_oses.json", "w")
 oses_file.write(JSON.generate(oses_content))
 oses_file.close
 
+bootstrap_config_templates_params =  bootstrap_config_templates.map do |config_template|
+  {
+    "config-template-id" => {
+      "command" => "hammer --output=json template info --name '#{config_template}'|/usr/local/bin/jq .Id"
+    }
+  }
+end
+
 default_config_templates_params =  default_config_templates.map do |config_template|
   {
     "config-template-id" => {
@@ -216,7 +247,10 @@ default_config_templates_params =  default_config_templates.map do |config_templ
   }
 end
 
-os_default_templates_content = { "CentOS 7.2" => default_config_templates_params }
+os_default_templates_content = {
+  "Bootstrap CentOS 7.2" => bootstrap_config_templates_params,
+  "CentOS 7.2" => default_config_templates_params,
+}
 
 os_default_templates_file = File.open("tmp/foreman_os_default_templates.json", "w")
 os_default_templates_file.write(JSON.generate(os_default_templates_content))
@@ -338,7 +372,7 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", name: "foreman install", inline: "#{foreman_installer_command_1};#{foreman_installer_command_2}||#{foreman_installer_command_2}"
 
   # puppet run, execute twice to ensure convergency
-  config.vm.provision "shell", name: "puppet run", inline: "sudo puppet agent --test;sudo puppet agent --test"
+  config.vm.provision "shell", name: "puppet run", inline: "sudo puppet agent --test||sudo puppet agent --test"
 
   # foreman domains provision
   config.vm.provision "file", source: domains_file.path, destination: "/tmp/foreman_domains.json"
@@ -382,6 +416,9 @@ Vagrant.configure(2) do |config|
 
   # generate pxe
   config.vm.provision "shell", name: "generate pxe", inline: "sudo hammer template build-pxe-default"
+
+  # ipxe.lkrn provision
+  config.vm.provision "shell", name: "ipxe.lkrn", inline: "sudo cp -v /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/ipxe.lkrn"
 
   # show the url and the generated admin password
   config.vm.provision "shell", name: "fin", inline: <<-FIN
