@@ -31,7 +31,7 @@ unset http_proxy
 1. Ejecute `vagrant up` en este directorio y guarde la información de acceso a Foreman.
 
     ```
-    Iniciar sesión en https://foreman1.oas.local
+    Ya puede iniciar sesión en https://foreman1.oas.local
     La contraseña inicial del usuario admin es: CONTRASEÑA
     ```
 1. Por conveniencia puede agregar estas líneas a su archivo `/etc/hosts`.

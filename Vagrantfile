@@ -112,24 +112,6 @@ environments_file = File.open("tmp/foreman_environments.json", "w")
 environments_file.write(JSON.generate(environments_content))
 environments_file.close
 
-models_content = {
-  "VirtualBox" => {},
-  "Sun V125" => {},
-}
-
-models_file = File.open("tmp/foreman_models.json", "w")
-models_file.write(JSON.generate(models_content))
-models_file.close
-
-architectures_content = {
-  "i386" => {},
-  "x86_64" => {},
-}
-
-architectures_file = File.open("tmp/foreman_architectures.json", "w")
-architectures_file.write(JSON.generate(architectures_content))
-architectures_file.close
-
 default_partition_table = "Kickstart default"
 
 additional_partition_tables = [
@@ -141,7 +123,7 @@ hostgroups_content = {
   "grupo-oas" => {
     "architecture" => "x86_64",
     "domain" => foreman_provision_domain,
-    "medium" => "CentOS mirror", # sujeto a cambio en cuanto se tenga katello
+    "medium" => "CentOS vault", # sujeto a cambio en cuanto se tenga katello
     "operatingsystem" => "CentOS 7.2",
     "partition-table" => default_partition_table,
     "puppet-ca-proxy" => foreman_fqdn,
@@ -149,14 +131,13 @@ hostgroups_content = {
     "root-pass" => "oasmaster",
     "subnet" => foreman_provision_subnet_name,
   },
-  "grupo-bootstrap" => {
-    "environment" => "plataforma",
-    "parent" => "grupo-oas",
-    "operatingsystem" => "Bootstrap CentOS 7.2",
-  },
   "grupo-plataforma" => {
     "environment" => "plataforma",
     "parent" => "grupo-oas",
+  },
+  "grupo-bootstrap" => {
+    "parent" => "grupo-plataforma",
+    "operatingsystem" => "BootstrapCentOS 7.2",
   },
   "grupo-desarrollo" => {
     "environment" => "desarrollo",
@@ -181,10 +162,25 @@ hostgroups_file = File.open("tmp/foreman_hostgroups.json", "w")
 hostgroups_file.write(JSON.generate(hostgroups_content))
 hostgroups_file.close
 
+media_content = {
+  "CentOS vault" => {
+    "os-family" => "Redhat",
+    "path" => "http://vault.centos.org/centos/$version/os/$arch",
+  },
+}
+
+media_file = File.open("tmp/foreman_media.json", "w")
+media_file.write(JSON.generate(media_content))
+media_file.close
+
+# bootstrap hace boot desde repositorios
+# en internet
 bootstrap_pxe_config_templates = [
   "Kickstart default PXELinux",
 ]
 
+# default hace boot desde repositorios
+# locales
 default_pxe_config_templates = [
   "PXELinux chain iPXE",
   "Kickstart default iPXE",
@@ -211,17 +207,17 @@ oses_content = {
       "minor" => "2.1511",
       "architectures" => "i386,x86_64",
       "family" => "Redhat",
-      "media" => "CentOS mirror",
+      "media" => "CentOS vault",
       "partition-tables" => all_partition_tables.join(","),
       "config-templates" => all_config_templates.join(",")
   },
-  "Boostrap CentOS 7.2" => {
-      "name" => "CentOS",
+  "BootstrapCentOS 7.2" => {
+      "name" => "BootstrapCentOS",
       "major" => "7",
       "minor" => "2.1511",
       "architectures" => "i386,x86_64",
       "family" => "Redhat",
-      "media" => "CentOS mirror",
+      "media" => "CentOS vault",
       "partition-tables" => all_partition_tables.join(","),
       "config-templates" => all_config_templates.join(",")
   },
@@ -248,7 +244,7 @@ default_config_templates_params =  default_config_templates.map do |config_templ
 end
 
 os_default_templates_content = {
-  "Bootstrap CentOS 7.2" => bootstrap_config_templates_params,
+  "BootstrapCentOS 7.2" => bootstrap_config_templates_params,
   "CentOS 7.2" => default_config_templates_params,
 }
 
@@ -266,43 +262,11 @@ if not File.exists? "tmp/jq-linux64"
   end
 end
 
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
-Vagrant.configure(2) do |config|
-  # The most common configuration options are documented and commented below.
-  # For a complete reference, please see the online documentation at
-  # https://docs.vagrantup.com.
-
-  # Every Vagrant development environment requires a box. You can search for
-  # boxes at https://atlas.hashicorp.com/search.
+VAGRANT_API_VERSION = 2
+Vagrant.configure(VAGRANT_API_VERSION) do |config|
   config.vm.box = "centos-7.2"
-
-  # The url from where the 'config.vm.box' box will be fetched if it
-  # doesn't already exist on the user's system.
   config.vm.box_url = "http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_centos-7.2_chef-provisionerless.box"
-
-  # Create a forwarded port mapping which allows access to a specific port
-  # within the machine from a port on the host machine. In the example below,
-  # accessing "localhost:8080" will access port 80 on the guest machine.
-  # config.vm.network "forwarded_port", guest: 80, host: 8080
-
-  # Create a private network, which allows host-only access to the machine
-  # using a specific IP.
   config.vm.network "private_network", ip: foreman_ip #nic2
-
-  # Create a public network, which generally matched to bridged network.
-  # Bridged networks make the machine appear as another physical device on
-  # your network.
-  # config.vm.network "public_network"
-
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
-
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
@@ -389,15 +353,10 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", name: "environments 1/2", inline: "sudo /usr/local/bin/ensure_foreman_environments.rb --source /tmp/foreman_environments.json"
   config.vm.provision "shell", name: "environments 2/2", inline: "rm -v /tmp/foreman_environments.json"
 
-  # foreman architectures provision
-  config.vm.provision "file", source: architectures_file.path, destination: "/tmp/foreman_architectures.json"
-  config.vm.provision "shell", name: "architectures 1/2", inline: "sudo /usr/local/bin/ensure_foreman_architectures.rb --source /tmp/foreman_architectures.json"
-  config.vm.provision "shell", name: "architectures 2/2", inline: "rm -v /tmp/foreman_architectures.json"
-
-  # foreman models provision
-  config.vm.provision "file", source: models_file.path, destination: "/tmp/foreman_models.json"
-  config.vm.provision "shell", name: "models 1/2", inline: "sudo /usr/local/bin/ensure_foreman_models.rb --source /tmp/foreman_models.json"
-  config.vm.provision "shell", name: "models 2/2", inline: "rm -v /tmp/foreman_models.json"
+  # foreman media provision
+  config.vm.provision "file", source: media_file.path, destination: "/tmp/foreman_media.json"
+  config.vm.provision "shell", name: "media 1/2", inline: "sudo /usr/local/bin/ensure_foreman_media.rb --source /tmp/foreman_media.json"
+  config.vm.provision "shell", name: "media 2/2", inline: "rm -v /tmp/foreman_media.json"
 
   # foreman oses provision
   config.vm.provision "file", source: oses_file.path, destination: "/tmp/foreman_oses.json"
@@ -422,7 +381,7 @@ Vagrant.configure(2) do |config|
 
   # show the url and the generated admin password
   config.vm.provision "shell", name: "fin", inline: <<-FIN
-    echo Iniciar sesión en #{foreman_url}
+    echo Ya puede iniciar sesión en #{foreman_url}
     echo La contraseña inicial del usuario admin es: $(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param admin_password)
   FIN
 end
