@@ -90,7 +90,7 @@ vagrant provision
 ```
 # localhost >
 vagrant destroy -f
-vagrant up
+vagrant up;vagrant provision
 ```
 
 ### Archivos de log relevantes
