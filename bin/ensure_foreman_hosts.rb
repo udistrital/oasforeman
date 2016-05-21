@@ -13,6 +13,7 @@ OptionParser.new do |opts|
 end.parse!
 
 if File.exists? options[:source]
+  show_output = false
   hosts = JSON.parse(File.open(options[:source]).read)
   hosts.each do |host_name, host_params|
     hammer_cmd = "#{HAMMER} host info '--name=#{host_name}'"
@@ -22,10 +23,15 @@ if File.exists? options[:source]
     if not $?.success?
       hammer_cmd_parts.push "create '--name=#{host_name.split(".")[0]}'"
     else
-      hammer_cmd_parts.push "echo update '--name=#{host_name}'"
-      STDERR.puts "Updating of hosts is not supported yet!"
-      STDERR.puts "delete the host and provision again"
-      STDERR.puts "if you wanna use this to provision method"
+      # hammer_cmd_parts.push "update '--name=#{host_name}'" - actualizar un host es complejo
+      hammer_cmd_parts.pop
+      hammer_cmd_parts.push "echo hammer host update '--name=#{host_name}'"
+      STDERR.puts "Updating of hosts is complex and is not supported yet!"
+      STDERR.puts "if you wanna use this as the method to provision again"
+      STDERR.puts "delete the host and re-provision again"
+      STDERR.puts "or execute the 'hammer host update' command bellow"
+      STDERR.puts "after removing the problematic parts"
+      show_output = true
     end
     host_params.each do |param_name, param_value|
       if param_value.kind_of? Array
@@ -55,6 +61,10 @@ if File.exists? options[:source]
     end
     hammer_cmd = hammer_cmd_parts.join(" ")
     puts "Running #{hammer_cmd}"
-    `#{hammer_cmd}`
+    if show_output
+      puts `#{hammer_cmd}`
+    else
+      `#{hammer_cmd}`
+    end
   end
 end

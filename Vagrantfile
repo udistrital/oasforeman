@@ -456,7 +456,7 @@ Vagrant.configure(2) do |config|
     # set host only interface with highest priority to boot
     # provision more ram and cpu
     katello.vm.provider "virtualbox" do |vbox|
-      vbox.customize ["modifyvm", :id, "--nicbootprio2", "1", "--boot1", "net", "--ioapic", "off"]
+      vbox.customize ["modifyvm", :id, "--nicbootprio2", "1", "--boot1", "net", "--boot2", "disk", "--ioapic", "off"]
       vbox.memory = 4096
       vbox.cpus = 2
       vbox.gui = true

@@ -26,7 +26,7 @@ unset http_proxy
 
 ## ¿Cómo usar esto?
 
-1. Necesita un equipo con al menos 4GB libres de memoria
+1. Necesita un equipo con al menos 4GB (8GB si además quiere aprovisionar Katello) libres de memoria
 1. Descargue [Vagrant](https://www.vagrantup.com/) y [VirtualBox](https://www.virtualbox.org/)
 1. Ejecute `vagrant up ; vagrant provision` en este directorio y guarde la información de acceso a Foreman.
 
@@ -38,15 +38,18 @@ unset http_proxy
 
     ```
     192.168.12.42 foreman1.oas.local foreman1
+    192.168.12.40 katello1.oas.local katello1
     ```
 
    O ejecutar el siguiente comando.
 
     ```
     echo 192.168.12.42 foreman1.oas.local foreman1 | sudo tee -a /etc/hosts
+    echo 192.168.12.40 katello1.oas.local katello1 | sudo tee -a /etc/hosts
     ```
 1. Visite [foreman1.oas.local](https://foreman1.oas.local/) o [192.168.12.42](https://192.168.12.42/) en su navegador (la verificación de cerficado fallará sin embargo deberá continuar al sitio).
 1. Use las credenciales guardadas del paso anterior para iniciar sesión en Foreman (User: admin / Password: CONTRASEÑA).
+1. (opcional) Ejecute `vagrant up katello`.
 
 ## Troubleshooting
 
@@ -61,6 +64,7 @@ vagrant provision
 ### Borrar todo y comenzar de cero
 
 ```
+# localhost >
 vagrant destroy -f
 vagrant up
 ```
@@ -75,12 +79,12 @@ vagrant up
 Ver todos a la vez con:
 
 ```
-localhost>
+# localhost >
 vagrant ssh
 ```
 
 ```
-foreman1>
+# foreman1 >
 sudo tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log /var/log/foreman-proxy/proxy.log
 ```
 
