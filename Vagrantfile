@@ -15,6 +15,21 @@ foreman_ip = "192.168.12.42"
 foreman_hostname = "foreman1"
 foreman_local_domain = "oas.local"
 
+# general katello settings
+katello_ip = "192.168.12.40"
+katello_hostname = "katello1"
+katello_local_domain = "oas.local"
+
+# configuraciones del home base de katello (es multi-homed)
+katello_base_hostname = "katello1"
+katello_base_domain = "oas.local"
+katello_base_subnet_name = "virtualbox-local"
+katello_base_network = "10.0.2.0"
+katello_base_mask = "255.255.255.0"
+katello_base_ip = "10.0.2.15"
+katello_base_interface = "enp0s3"
+katello_base_mac = "0A5C0DE50001" # OAS Codes 0001
+
 # settings for provisioning with foreman
 foreman_provision_ip = "192.168.12.42"
 foreman_provision_network = "192.168.12.0"
@@ -23,13 +38,24 @@ foreman_provision_domain = "oas.local"
 foreman_provision_reverse_zone = "12.168.192.in-addr.arpa"
 foreman_provision_subnet_name = "oas-local"
 foreman_provision_range = "192.168.12.201 192.168.12.250"
-foreman_provision_gateway = ""
-foreman_provision_extra_domains = []
+foreman_provision_gateway = "" # de haber un router a internet en la zona de aprovisionamiento iria aquí
+
+# settings to get katello provisioned by foreman
+katello_provision_domain = "oas.local"
+katello_provision_ip = "192.168.12.40"
+katello_provision_interface = "enp0s8"
+katello_provision_mac = "0A5C0DE50002" # OAS Codes 0002
 
 # calculated settings
-foreman_provision_domains = ([ foreman_provision_domain ] + foreman_provision_extra_domains).join(",")
+# foreman
+foreman_provision_extra_domains = [ ]
+foreman_provision_domains_parts = ([ foreman_provision_domain ] + foreman_provision_extra_domains)
+foreman_provision_domains = foreman_provision_domains_parts.join(",")
 foreman_fqdn = "#{foreman_hostname}.#{foreman_local_domain}"
 foreman_url = "https://#{foreman_fqdn}"
+# katello
+katello_fqdn = "#{katello_hostname}.#{katello_local_domain}"
+katello_provision_fqdn = katello_fqdn
 
 # foreman installer options for first run
 foreman_installer_options_1 = [
@@ -44,12 +70,12 @@ foreman_installer_options_1 = [
   "--foreman-proxy-tftp=true",
   "--foreman-proxy-tftp-servername='#{foreman_provision_ip}'",
   "--foreman-proxy-dhcp=true",
-  "--foreman-proxy-dhcp-interface=\"$(/usr/local/bin/get_interface.sh -i '#{foreman_provision_ip}')\"",
+  "--foreman-proxy-dhcp-interface=\"$(/usr/local/bin/get_interface.rb --ip '#{foreman_provision_ip}')\"",
   "--foreman-proxy-dhcp-gateway='#{foreman_provision_gateway}'",
   "--foreman-proxy-dhcp-range='#{foreman_provision_range}'",
   "--foreman-proxy-dhcp-nameservers='#{foreman_provision_ip}'",
   "--foreman-proxy-dns=true",
-  "--foreman-proxy-dns-interface=$(/usr/local/bin/get_interface.sh -i '#{foreman_provision_ip}')",
+  "--foreman-proxy-dns-interface=$(/usr/local/bin/get_interface.rb --ip '#{foreman_provision_ip}')",
   "--foreman-proxy-dns-zone='#{foreman_provision_domain}'",
   "--foreman-proxy-dns-reverse='#{foreman_provision_reverse_zone}'",
   "--foreman-proxy-dns-forwarders=$(/usr/local/bin/get_nameserver.sh)",
@@ -65,21 +91,30 @@ foreman_installer_options_2 = foreman_installer_options_1 + [
 foreman_installer_command_1 = "sudo foreman-installer #{foreman_installer_options_1.join(" ")}"
 foreman_installer_command_2 = "sudo foreman-installer #{foreman_installer_options_2.join(" ")}"
 
-hosts_content = <<-EOF
+etc_hosts_content = <<-EOF
 127.0.0.1     localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1           localhost localhost.localdomain localhost6 localhost6.localdomain6
 #{foreman_ip} #{foreman_fqdn} #{foreman_hostname}
+#{katello_ip} #{katello_fqdn} #{katello_hostname}
 EOF
 
-hosts_file = File.open("tmp/hosts", "w")
-hosts_file.write(hosts_content)
-hosts_file.close
+etc_hosts_file = File.open("tmp/hosts", "w")
+etc_hosts_file.write(etc_hosts_content)
+etc_hosts_file.close
 
 domains_content = {
   foreman_local_domain => {
     "dns" => foreman_fqdn,
   },
 }
+
+extra_domains_content = foreman_provision_domains_parts.map do |domain|
+  {domain => {}}
+end
+
+extra_domains_content.each do |extra_domain_content|
+  domains_content.merge!extra_domain_content
+end
 
 domains_file = File.open("tmp/foreman_domains.json", "w")
 domains_file.write(JSON.generate(domains_content))
@@ -88,11 +123,16 @@ domains_file.close
 subnets_content = {
   foreman_provision_subnet_name => {
     "network" => foreman_provision_network,
-    "mask"    => foreman_provision_mask,
+    "mask" => foreman_provision_mask,
     "domains" => foreman_provision_domains,
-    "dhcp-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq .Id" }, # quieres mejorar esto?
-    "dns-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq .Id" },
-    "tftp-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq .Id" },
+    "dhcp-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq -r .Id" }, # quieres mejorar esto?
+    "dns-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq -r .Id" },
+    "tftp-id" => { "command" => "hammer --output=json proxy info --name #{foreman_fqdn}|/usr/local/bin/jq -r .Id" },
+  },
+  katello_base_subnet_name => {
+    "network" => katello_base_network,
+    "mask" => katello_base_mask,
+    "domains" => foreman_provision_domains,
   },
 }
 
@@ -137,7 +177,8 @@ hostgroups_content = {
   },
   "grupo-bootstrap" => {
     "parent" => "grupo-plataforma",
-    "operatingsystem" => "BootstrapCentOS 7.2",
+    "medium" => "CentOS mirror",
+    "operatingsystem" => "BootstrapCentOS 7",
   },
   "grupo-desarrollo" => {
     "environment" => "desarrollo",
@@ -151,11 +192,6 @@ hostgroups_content = {
     "environment" => "produccion",
     "parent" => "grupo-oas",
   },
-#  --puppet-class-ids PUPPETCLASS_IDS      List of puppetclass ids
-#                                          Comma separated list of values.
-#  --puppet-classes PUPPET_CLASS_NAMES     Comma separated list of values.
-#  --realm REALM_NAME                      Name to search by => (inclusión sujeta a cambio segun disponibilidad de freeipa)
-#  --realm-id REALM_ID                     Numerical ID or realm name
 }
 
 hostgroups_file = File.open("tmp/foreman_hostgroups.json", "w")
@@ -173,10 +209,21 @@ media_file = File.open("tmp/foreman_media.json", "w")
 media_file.write(JSON.generate(media_content))
 media_file.close
 
+templates_content = {
+  "Kickstart bootstrap PXELinux" => {
+    "file" => "/tmp/templates/Kickstart_bootstrap_PXELinux.erb",
+    "type" => "PXELinux"
+  }
+}
+
+templates_file = File.open("tmp/foreman_templates.json", "w")
+templates_file.write(JSON.generate(templates_content))
+templates_file.close
+
 # bootstrap hace boot desde repositorios
-# en internet
+# en internet, este es el default para bootstrap
 bootstrap_pxe_config_templates = [
-  "Kickstart default PXELinux",
+  "Kickstart bootstrap PXELinux", # esta es custom made
 ]
 
 # default hace boot desde repositorios
@@ -193,6 +240,7 @@ default_provision_config_templates = [
 ]
 
 additional_config_templates = [
+  "Kickstart default PXELinux",
 ]
 
 bootstrap_config_templates = bootstrap_pxe_config_templates + default_provision_config_templates
@@ -204,20 +252,19 @@ oses_content = {
   "CentOS 7.2" => {
       "name" => "CentOS",
       "major" => "7",
-      "minor" => "2.1511",
+      "minor" => "2.1511", # disponible siempre en vault, disponible en mirror solo si es latest
       "architectures" => "i386,x86_64",
       "family" => "Redhat",
-      "media" => "CentOS vault",
+      "media" => "CentOS vault", # en vault se mantienen copias archivadas
       "partition-tables" => all_partition_tables.join(","),
       "config-templates" => all_config_templates.join(",")
   },
-  "BootstrapCentOS 7.2" => {
+  "BootstrapCentOS 7" => {
       "name" => "BootstrapCentOS",
-      "major" => "7",
-      "minor" => "2.1511",
+      "major" => "7", # en mirror 7 es un enlace al "latest"
       "architectures" => "i386,x86_64",
       "family" => "Redhat",
-      "media" => "CentOS vault",
+      "media" => "CentOS mirror", # las imagenes de boot no estan en vault pero si en mirror [mirror|vault].centos.org/centos/[version]/os/x86_64/images/pxeboot/
       "partition-tables" => all_partition_tables.join(","),
       "config-templates" => all_config_templates.join(",")
   },
@@ -230,7 +277,7 @@ oses_file.close
 bootstrap_config_templates_params =  bootstrap_config_templates.map do |config_template|
   {
     "config-template-id" => {
-      "command" => "hammer --output=json template info --name '#{config_template}'|/usr/local/bin/jq .Id"
+      "command" => "hammer --output=json template info --name '#{config_template}'|/usr/local/bin/jq -r .Id"
     }
   }
 end
@@ -238,19 +285,51 @@ end
 default_config_templates_params =  default_config_templates.map do |config_template|
   {
     "config-template-id" => {
-      "command" => "hammer --output=json template info --name '#{config_template}'|/usr/local/bin/jq .Id"
+      "command" => "hammer --output=json template info --name '#{config_template}'|/usr/local/bin/jq -r .Id"
     }
   }
 end
 
 os_default_templates_content = {
-  "BootstrapCentOS 7.2" => bootstrap_config_templates_params,
+  "BootstrapCentOS 7" => bootstrap_config_templates_params,
   "CentOS 7.2" => default_config_templates_params,
 }
 
 os_default_templates_file = File.open("tmp/foreman_os_default_templates.json", "w")
 os_default_templates_file.write(JSON.generate(os_default_templates_content))
 os_default_templates_file.close
+
+hosts_content = {
+  "#{katello_fqdn}" => {
+    "hostgroup" => "grupo-bootstrap",
+    "interface" => [
+      {
+        "managed" => "false",
+        "primary" => "true",
+        "provision" => "false",
+        "identifier" => katello_base_interface,
+        "mac" => katello_base_mac,
+        "ip" => katello_base_ip,
+        "subnet_id" => { "command" => "hammer --output=json subnet info '--name=#{katello_base_subnet_name}'|/usr/local/bin/jq -r .Id"}, # en realidad la subnet no es de katello exclusivamente...
+        "domain_id" => { "command" => "hammer --output=json domain info '--name=#{katello_base_domain}'|/usr/local/bin/jq -r .Id"}, # en realidad el dominio no es de katello exclusivamente...
+      },
+      {
+        "managed" => "true",
+        "primary" => "false",
+        "provision" => "true",
+        "identifier" => katello_provision_interface,
+        "mac" => katello_provision_mac,
+        "ip" => katello_provision_ip,
+        "subnet_id" => { "command" => "hammer --output=json subnet info '--name=#{foreman_provision_subnet_name}'|/usr/local/bin/jq -r .Id"},
+        "domain_id" => { "command" => "hammer --output=json domain info '--name=#{foreman_provision_domain}'|/usr/local/bin/jq -r .Id"},
+      },
+    ],
+  },
+}
+
+hosts_file = File.open("tmp/foreman_hosts.json", "w")
+hosts_file.write(JSON.generate(hosts_content))
+hosts_file.close
 
 # get jq if needed
 if not File.exists? "tmp/jq-linux64"
@@ -262,97 +341,126 @@ if not File.exists? "tmp/jq-linux64"
   end
 end
 
-VAGRANT_API_VERSION = 2
-Vagrant.configure(VAGRANT_API_VERSION) do |config|
+Vagrant.configure(2) do |config|
   config.vm.box = "centos-7.2"
   config.vm.box_url = "http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_centos-7.2_chef-provisionerless.box"
-  config.vm.network "private_network", ip: foreman_ip #nic2
 
-  # put host-only nic in promiscuous mode
-  # provision ram and cpu
-  config.vm.provider "virtualbox" do |vbox|
-    vbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
-    vbox.memory = 4096
-    vbox.cpus = 2
+  # foreman vm config
+  config.vm.define :foreman, primary: true do |foreman|
+    foreman.vm.network "private_network", ip: foreman_ip
+
+    # provision more ram and cpu
+    foreman.vm.provider "virtualbox" do |vbox|
+      vbox.memory = 4096
+      vbox.cpus = 2
+    end
+
+    # install jq
+    foreman.vm.provision "file", source: "tmp/jq-linux64", destination: "/tmp/jq-linux64"
+    foreman.vm.provision "shell", name: "install jq 1/3", inline: "sudo chown -v root:root /tmp/jq-linux64"
+    foreman.vm.provision "shell", name: "install jq 2/3", inline: "sudo chmod -v +x /tmp/jq-linux64"
+    foreman.vm.provision "shell", name: "install jq 3/3", inline: "sudo mv -v /tmp/jq-linux64 /usr/local/bin/jq"
+
+    # host naming
+    foreman.vm.hostname = foreman_fqdn
+    foreman.vm.provision "file", source: etc_hosts_file.path, destination: "/tmp/hosts"
+    foreman.vm.provision "shell", name: "host naming 1/2", inline: "sudo tee /etc/hosts < /tmp/hosts"
+    foreman.vm.provision "shell", name: "host naming 2/2", inline: "rm -v /tmp/hosts"
+
+    # tools
+    foreman.vm.provision "file", source: "bin", destination: "/tmp"
+    foreman.vm.provision "shell", name: "tools 1/3", inline: "sudo chown -v root:root /tmp/bin/*"
+    foreman.vm.provision "shell", name: "tools 2/3", inline: "sudo mv -v /tmp/bin/* /usr/local/bin"
+    foreman.vm.provision "shell", name: "tools 3/3", inline: "rm -rv /tmp/bin"
+
+    # environment
+    foreman.vm.provision "shell", name: "environment 1/2", inline: "/usr/local/bin/set_environment.sh -n http_proxy -v '#{proxy}'"
+    foreman.vm.provision "shell", name: "environment 2/2", inline: "/usr/local/bin/set_environment.sh -n https_proxy -v '#{proxy}'"
+
+    # foreman provision
+    foreman.vm.provision "shell", name: "foreman provision 1/3", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
+    foreman.vm.provision "shell", name: "foreman provision 2/3", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
+    foreman.vm.provision "shell", name: "foreman provision 3/3", inline: "sudo yum -y -v install foreman-installer"
+
+    # foreman install, execute thrice (or maybe twice) to ensure convergency
+    foreman.vm.provision "shell", name: "foreman install", inline: "#{foreman_installer_command_1};#{foreman_installer_command_2}||#{foreman_installer_command_2}"
+
+    # puppet run, execute twice to ensure convergency
+    foreman.vm.provision "shell", name: "puppet run", inline: "sudo puppet agent --test||sudo puppet agent --test"
+
+    # foreman domains provision
+    foreman.vm.provision "file", source: domains_file.path, destination: "/tmp/foreman_domains.json"
+    foreman.vm.provision "shell", name: "domains 1/2", inline: "sudo /usr/local/bin/ensure_foreman_domains.rb --source /tmp/foreman_domains.json"
+    foreman.vm.provision "shell", name: "domains 2/2", inline: "rm -v /tmp/foreman_domains.json"
+
+    # foreman subnets provision
+    foreman.vm.provision "file", source: subnets_file.path, destination: "/tmp/foreman_subnets.json"
+    foreman.vm.provision "shell", name: "subnets 1/2", inline: "sudo /usr/local/bin/ensure_foreman_subnets.rb --source /tmp/foreman_subnets.json"
+    foreman.vm.provision "shell", name: "subnets 2/2", inline: "rm -v /tmp/foreman_subnets.json"
+
+    # foreman environments provision
+    foreman.vm.provision "file", source: environments_file.path, destination: "/tmp/foreman_environments.json"
+    foreman.vm.provision "shell", name: "environments 1/2", inline: "sudo /usr/local/bin/ensure_foreman_environments.rb --source /tmp/foreman_environments.json"
+    foreman.vm.provision "shell", name: "environments 2/2", inline: "rm -v /tmp/foreman_environments.json"
+
+    # foreman media provision
+    foreman.vm.provision "file", source: media_file.path, destination: "/tmp/foreman_media.json"
+    foreman.vm.provision "shell", name: "media 1/2", inline: "sudo /usr/local/bin/ensure_foreman_media.rb --source /tmp/foreman_media.json"
+    foreman.vm.provision "shell", name: "media 2/2", inline: "rm -v /tmp/foreman_media.json"
+
+    # foreman templates provision
+    foreman.vm.provision "file", source: "templates", destination: "/tmp"
+    foreman.vm.provision "file", source: templates_file.path, destination: "/tmp/foreman_templates.json"
+    foreman.vm.provision "shell", name: "templates 1/3", inline: "sudo /usr/local/bin/ensure_foreman_templates.rb --source /tmp/foreman_templates.json"
+    foreman.vm.provision "shell", name: "templates 2/3", inline: "rm -v /tmp/foreman_templates.json"
+    foreman.vm.provision "shell", name: "templates 2/3", inline: "rm -rv /tmp/templates"
+
+    # foreman oses provision
+    foreman.vm.provision "file", source: oses_file.path, destination: "/tmp/foreman_oses.json"
+    foreman.vm.provision "shell", name: "oses 1/2", inline: "sudo /usr/local/bin/ensure_foreman_oses.rb --source /tmp/foreman_oses.json"
+    foreman.vm.provision "shell", name: "oses 2/2", inline: "rm -v /tmp/foreman_oses.json"
+
+    # foreman os default templates provision
+    foreman.vm.provision "file", source: os_default_templates_file.path, destination: "/tmp/foreman_os_default_templates.json"
+    foreman.vm.provision "shell", name: "os default templates 1/2", inline: "sudo /usr/local/bin/ensure_foreman_os_default_templates.rb --source /tmp/foreman_os_default_templates.json"
+    foreman.vm.provision "shell", name: "os default templates 2/2", inline: "rm -v /tmp/foreman_os_default_templates.json"
+
+    # foreman hostgroups provision
+    foreman.vm.provision "file", source: hostgroups_file.path, destination: "/tmp/foreman_hostgroups.json"
+    foreman.vm.provision "shell", name: "hostgroups 1/2", inline: "sudo /usr/local/bin/ensure_foreman_hostgroups.rb --source /tmp/foreman_hostgroups.json"
+    foreman.vm.provision "shell", name: "hostgroups 2/2", inline: "rm -v /tmp/foreman_hostgroups.json"
+
+    # foreman hosts provision
+    foreman.vm.provision "file", source: hosts_file.path, destination: "/tmp/foreman_hosts.json"
+    foreman.vm.provision "shell", name: "hosts 1/2", inline: "sudo /usr/local/bin/ensure_foreman_hosts.rb --source /tmp/foreman_hosts.json"
+    foreman.vm.provision "shell", name: "hosts 2/2", inline: "rm -v /tmp/foreman_hosts.json"
+
+    # generate pxe
+    foreman.vm.provision "shell", name: "generate pxe", inline: "sudo hammer template build-pxe-default"
+
+    # ipxe.lkrn provision
+    foreman.vm.provision "shell", name: "ipxe.lkrn", inline: "sudo cp -v /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/ipxe.lkrn"
+
+    # show the url and the generated admin password
+    foreman.vm.provision "shell", name: "fin", inline: <<-FIN
+      echo Ya puede iniciar sesión en #{foreman_url}
+      echo La contraseña inicial del usuario admin es: $(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param admin_password)
+    FIN
   end
 
-  # install jq
-  config.vm.provision "file", source: "tmp/jq-linux64", destination: "/tmp/jq-linux64"
-  config.vm.provision "shell", name: "install jq 1/3", inline: "sudo chown -v root:root /tmp/jq-linux64"
-  config.vm.provision "shell", name: "install jq 2/3", inline: "sudo chmod -v +x /tmp/jq-linux64"
-  config.vm.provision "shell", name: "install jq 3/3", inline: "sudo mv -v /tmp/jq-linux64 /usr/local/bin/jq"
+  # katello vm config
+  config.vm.define :katello, autostart: false do |katello|
+    katello.vm.base_mac = katello_base_mac
+    katello.vm.network "private_network", ip: katello_provision_ip, mac: katello_provision_mac
+    katello.vm.boot_timeout = 3600
+    # set host only interface with highest priority to boot
+    # provision more ram and cpu
+    katello.vm.provider "virtualbox" do |vbox|
+      vbox.customize ["modifyvm", :id, "--nicbootprio2", "1", "--boot1", "net", "--ioapic", "off"]
+      vbox.memory = 4096
+      vbox.cpus = 2
+      vbox.gui = true
+    end
+  end
 
-  # host naming
-  config.vm.hostname = foreman_fqdn
-  config.vm.provision "file", source: hosts_file.path, destination: "/tmp/hosts"
-  config.vm.provision "shell", name: "host naming 1/2", inline: "sudo tee /etc/hosts < /tmp/hosts"
-  config.vm.provision "shell", name: "host naming 2/2", inline: "rm -v /tmp/hosts"
-
-  # tools
-  config.vm.provision "file", source: "bin", destination: "/tmp"
-  config.vm.provision "shell", name: "tools 1/3", inline: "sudo chown -v root:root /tmp/bin/*"
-  config.vm.provision "shell", name: "tools 2/3", inline: "sudo mv -v /tmp/bin/* /usr/local/bin"
-  config.vm.provision "shell", name: "tools 3/3", inline: "rm -rv /tmp/bin"
-
-  # environment
-  config.vm.provision "shell", name: "environment 1/2", inline: "/usr/local/bin/set_environment.sh -n http_proxy -v '#{proxy}'"
-  config.vm.provision "shell", name: "environment 2/2", inline: "/usr/local/bin/set_environment.sh -n https_proxy -v '#{proxy}'"
-
-  # foreman provision
-  config.vm.provision "shell", name: "foreman provision 1/3", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
-  config.vm.provision "shell", name: "foreman provision 2/3", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
-  config.vm.provision "shell", name: "foreman provision 3/3", inline: "sudo yum -y -v install foreman-installer"
-
-  # foreman install, execute thrice (or maybe twice) to ensure convergency
-  config.vm.provision "shell", name: "foreman install", inline: "#{foreman_installer_command_1};#{foreman_installer_command_2}||#{foreman_installer_command_2}"
-
-  # puppet run, execute twice to ensure convergency
-  config.vm.provision "shell", name: "puppet run", inline: "sudo puppet agent --test||sudo puppet agent --test"
-
-  # foreman domains provision
-  config.vm.provision "file", source: domains_file.path, destination: "/tmp/foreman_domains.json"
-  config.vm.provision "shell", name: "domains 1/2", inline: "sudo /usr/local/bin/ensure_foreman_domains.rb --source /tmp/foreman_domains.json"
-  config.vm.provision "shell", name: "domains 2/2", inline: "rm -v /tmp/foreman_domains.json"
-
-  # foreman subnets provision
-  config.vm.provision "file", source: subnets_file.path, destination: "/tmp/foreman_subnets.json"
-  config.vm.provision "shell", name: "subnets 1/2", inline: "sudo /usr/local/bin/ensure_foreman_subnets.rb --source /tmp/foreman_subnets.json"
-  config.vm.provision "shell", name: "subnets 2/2", inline: "rm -v /tmp/foreman_subnets.json"
-
-  # foreman environments provision
-  config.vm.provision "file", source: environments_file.path, destination: "/tmp/foreman_environments.json"
-  config.vm.provision "shell", name: "environments 1/2", inline: "sudo /usr/local/bin/ensure_foreman_environments.rb --source /tmp/foreman_environments.json"
-  config.vm.provision "shell", name: "environments 2/2", inline: "rm -v /tmp/foreman_environments.json"
-
-  # foreman media provision
-  config.vm.provision "file", source: media_file.path, destination: "/tmp/foreman_media.json"
-  config.vm.provision "shell", name: "media 1/2", inline: "sudo /usr/local/bin/ensure_foreman_media.rb --source /tmp/foreman_media.json"
-  config.vm.provision "shell", name: "media 2/2", inline: "rm -v /tmp/foreman_media.json"
-
-  # foreman oses provision
-  config.vm.provision "file", source: oses_file.path, destination: "/tmp/foreman_oses.json"
-  config.vm.provision "shell", name: "oses 1/2", inline: "sudo /usr/local/bin/ensure_foreman_oses.rb --source /tmp/foreman_oses.json"
-  config.vm.provision "shell", name: "oses 2/2", inline: "rm -v /tmp/foreman_oses.json"
-
-  # foreman os default templates provision
-  config.vm.provision "file", source: os_default_templates_file.path, destination: "/tmp/foreman_os_default_templates.json"
-  config.vm.provision "shell", name: "os default templates 1/2", inline: "sudo /usr/local/bin/ensure_foreman_os_default_templates.rb --source /tmp/foreman_os_default_templates.json"
-  config.vm.provision "shell", name: "os default templates 2/2", inline: "rm -v /tmp/foreman_os_default_templates.json"
-
-  # foreman hostgroups provision
-  config.vm.provision "file", source: hostgroups_file.path, destination: "/tmp/foreman_hostgroups.json"
-  config.vm.provision "shell", name: "hostgroups 1/2", inline: "sudo /usr/local/bin/ensure_foreman_hostgroups.rb --source /tmp/foreman_hostgroups.json"
-  config.vm.provision "shell", name: "hostgroups 2/2", inline: "rm -v /tmp/foreman_hostgroups.json"
-
-  # generate pxe
-  config.vm.provision "shell", name: "generate pxe", inline: "sudo hammer template build-pxe-default"
-
-  # ipxe.lkrn provision
-  config.vm.provision "shell", name: "ipxe.lkrn", inline: "sudo cp -v /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/ipxe.lkrn"
-
-  # show the url and the generated admin password
-  config.vm.provision "shell", name: "fin", inline: <<-FIN
-    echo Ya puede iniciar sesión en #{foreman_url}
-    echo La contraseña inicial del usuario admin es: $(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param admin_password)
-  FIN
 end

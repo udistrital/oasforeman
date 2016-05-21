@@ -28,7 +28,7 @@ unset http_proxy
 
 1. Necesita un equipo con al menos 4GB libres de memoria
 1. Descargue [Vagrant](https://www.vagrantup.com/) y [VirtualBox](https://www.virtualbox.org/)
-1. Ejecute `vagrant up` en este directorio y guarde la información de acceso a Foreman.
+1. Ejecute `vagrant up ; vagrant provision` en este directorio y guarde la información de acceso a Foreman.
 
     ```
     Ya puede iniciar sesión en https://foreman1.oas.local
@@ -75,6 +75,12 @@ vagrant up
 Ver todos a la vez con:
 
 ```
+localhost>
+vagrant ssh
+```
+
+```
+foreman1>
 sudo tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log /var/log/foreman-proxy/proxy.log
 ```
 

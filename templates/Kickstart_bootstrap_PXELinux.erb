@@ -1,0 +1,34 @@
+<%#
+kind: PXELinux
+name: Kickstart bootstrap PXELinux
+oses:
+- CentOS 7
+%>
+# Esta plantilla esta basada en "Kickstart default PXELinux"
+# remueve el soporte para otros sistemas operativos y tambien
+# remueve la opcion "IPAPPEND 2" dado el "multihomming"
+# se agrega a la linea de comandos de inicio del kernel el
+# parametro ksdevice=interfaz_primaria para que el sistema
+# operativo se pueda conectar a la red y aprovisionarse.
+#
+# This file was deployed via '<%= @template_name %>' template
+#
+# Supported host/hostgroup parameters:
+#
+# blacklist = module1, module2
+#   Blacklisted kernel modules
+#
+<%
+  options = []
+  if @host.params['blacklist']
+    options << "modprobe.blacklist=" + @host.params['blacklist'].gsub(' ', '')
+  end
+  options = options.join(' ')
+-%>
+
+DEFAULT linux
+
+LABEL linux
+    KERNEL <%= @kernel %>
+    APPEND initrd=<%= @initrd %> ks=<%= foreman_url('provision')%> network ks.sendmac ksdevice=<%= @host.primary_interface.identifier %> <%= options %>
+
