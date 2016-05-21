@@ -32,6 +32,11 @@ unset http_proxy
     ```
     git clone git@github.com:udistrital/oasforeman.git
     ```
+   O por `https` si ssh no funciona.
+
+   ```
+   git clone https://github.com/udistrital/oasforeman.git
+   ```
 1. Entrar al directorio de checkout
 
     ```
