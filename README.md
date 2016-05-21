@@ -27,6 +27,16 @@ unset http_proxy
 ## ¿Cómo usar esto?
 
 1. Necesita un equipo con al menos 4GB (8GB si además quiere aprovisionar Katello) libres de memoria
+1. Clonar este repositorio en tu estación de trabajo
+
+    ```
+    git clone git@github.com:udistrital/oasforeman.git
+    ```
+1. Entrar al directorio de checkout
+
+    ```
+    cd oasforeman
+    ```
 1. Descargue [Vagrant](https://www.vagrantup.com/) y [VirtualBox](https://www.virtualbox.org/)
 1. Ejecute `vagrant up ; vagrant provision` en este directorio y guarde la información de acceso a Foreman.
 
