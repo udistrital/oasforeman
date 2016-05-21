@@ -43,13 +43,12 @@ unset http_proxy
     cd oasforeman
     ```
 1. Descargue [Vagrant](https://www.vagrantup.com/) y [VirtualBox](https://www.virtualbox.org/)
-1. Ejecute `vagrant up ; vagrant provision` en este directorio y guarde la información de acceso a Foreman.
+1. Ejecute en este directorio.
 
     ```
-    Ya puede iniciar sesión en https://foreman1.oas.local
-    La contraseña inicial del usuario admin es: CONTRASEÑA
+    vagrant up;vagrant provision
     ```
-1. Por conveniencia puede agregar estas líneas a su archivo `/etc/hosts`.
+1. Por conveniencia puede agregar estas líneas a su archivo `/etc/hosts` (necesitará acceso de `root`)
 
     ```
     192.168.12.42 foreman1.oas.local foreman1
@@ -62,9 +61,19 @@ unset http_proxy
     echo 192.168.12.42 foreman1.oas.local foreman1 | sudo tee -a /etc/hosts
     echo 192.168.12.40 katello1.oas.local katello1 | sudo tee -a /etc/hosts
     ```
+1.  Guarde la información de acceso a Foreman.
+
+    ```
+    Ya puede iniciar sesión en https://{FQDN DE FOREMAN}
+    La contraseña inicial del usuario admin es: {CONTRASEÑA DE FOREMAN}
+    ```
 1. Visite [foreman1.oas.local](https://foreman1.oas.local/) o [192.168.12.42](https://192.168.12.42/) en su navegador (la verificación de cerficado fallará sin embargo deberá continuar al sitio).
 1. Use las credenciales guardadas del paso anterior para iniciar sesión en Foreman (User: admin / Password: CONTRASEÑA).
-1. (opcional) Ejecute `vagrant up katello`.
+1. Paso opcional. Ejecute:
+
+  ```
+  vagrant up katello
+  ```
 
 ## Troubleshooting
 
