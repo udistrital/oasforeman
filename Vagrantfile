@@ -8,7 +8,7 @@ if not File.exists? "tmp"
   FileUtils.mkdir_p "tmp"
 end
 
-proxy = ENV["http_proxy"] || ""
+proxy = "#{ENV["http_proxy"]}"
 
 # general foreman settings
 foreman_ip = "192.168.12.42"
@@ -38,6 +38,7 @@ foreman_provision_domain = "oas.local"
 foreman_provision_reverse_zone = "12.168.192.in-addr.arpa"
 foreman_provision_subnet_name = "oas-local"
 foreman_provision_range = "192.168.12.201 192.168.12.250"
+foreman_provision_extra_domains = [] # esta vacio por la naturaleza de aprovisionamiento en local para dev
 foreman_provision_gateway = "" # de haber un router a internet en la zona de aprovisionamiento iria aquí
 
 # settings to get katello provisioned by foreman
@@ -48,7 +49,6 @@ katello_provision_mac = "0A5C0DE50002" # OAS Codes 0002
 
 # calculated settings
 # foreman
-foreman_provision_extra_domains = [ ]
 foreman_provision_domains_parts = ([ foreman_provision_domain ] + foreman_provision_extra_domains)
 foreman_provision_domains = foreman_provision_domains_parts.join(",")
 foreman_fqdn = "#{foreman_hostname}.#{foreman_local_domain}"
@@ -59,7 +59,6 @@ katello_provision_fqdn = katello_fqdn
 
 # foreman installer options for first run
 foreman_installer_options_1 = [
-  "-v",
   "--detailed-exitcodes",
   "--enable-foreman-compute-ovirt",
   "--enable-foreman-compute-ec2",
@@ -82,7 +81,7 @@ foreman_installer_options_1 = [
   "--foreman-proxy-foreman-base-url='#{foreman_url}'",
 ]
 
-# foreman installer options for second run
+# foreman installer options for second run (link proxy)
 foreman_installer_options_2 = foreman_installer_options_1 + [
   "--foreman-proxy-oauth-consumer-key=$(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param oauth_consumer_key)",
   "--foreman-proxy-oauth-consumer-secret=$(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param oauth_consumer_secret)",
@@ -368,7 +367,7 @@ Vagrant.configure(2) do |config|
     foreman.vm.provision "shell", name: "host naming 2/2", inline: "rm -v /tmp/hosts"
 
     # tools
-    foreman.vm.provision "file", source: "bin", destination: "/tmp"
+    foreman.vm.provision "file", source: "util/bin", destination: "/tmp"
     foreman.vm.provision "shell", name: "tools 1/3", inline: "sudo chown -v root:root /tmp/bin/*"
     foreman.vm.provision "shell", name: "tools 2/3", inline: "sudo mv -v /tmp/bin/* /usr/local/bin"
     foreman.vm.provision "shell", name: "tools 3/3", inline: "rm -rv /tmp/bin"

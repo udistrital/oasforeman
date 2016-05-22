@@ -26,18 +26,13 @@ unset http_proxy
 
 ## ¿Cómo usar esto?
 
-1. Necesita un equipo con al menos 4GB (8GB si además quiere aprovisionar Katello) libres de memoria
-1. Clonar este repositorio en tu estación de trabajo
-
-    ```
-    git clone git@github.com:udistrital/oasforeman.git
-    ```
-   O por `https` si `ssh` no funciona.
+1. Necesita un equipo con al menos 4GB (8GB si además quiere aprovisionar Katello) libres de memoria.
+1. Clonar este repositorio en tu estación de trabajo.
 
    ```
    git clone https://github.com/udistrital/oasforeman.git
    ```
-1. Entrar al directorio de checkout
+1. Entrar al directorio de checkout.
 
     ```
     cd oasforeman
@@ -46,22 +41,22 @@ unset http_proxy
 1. Ejecute en este directorio.
 
     ```
-    vagrant up;vagrant provision
+    vagrant up
     ```
-1. Por conveniencia puede agregar estas líneas a su archivo `/etc/hosts` (necesitará acceso de `root`)
+1. Por conveniencia puede agregar estas líneas a su archivo `/etc/hosts` (necesitará acceso de `root`).
 
     ```
     192.168.12.42 foreman1.oas.local foreman1
     192.168.12.40 katello1.oas.local katello1
     ```
 
-   O ejecutar el siguiente comando.
+   Edite directamente el archivo `/etc/hosts` o ejecute estos comandos:
 
     ```
     echo 192.168.12.42 foreman1.oas.local foreman1 | sudo tee -a /etc/hosts
     echo 192.168.12.40 katello1.oas.local katello1 | sudo tee -a /etc/hosts
     ```
-1. Guarde la información de acceso a Foreman; esta aparecerá inmediatamente `vagrant up;vagrant provision` termine. Este es un ejemplo de lo que aparecerá en la consola:
+1. Guarde la información de acceso a Foreman; esta aparecerá inmediatamente el comando `vagrant up` termine. Este es un ejemplo de lo que aparecerá en la consola:
 
    ```
    Ya puede iniciar sesión en https://{FQDN DE FOREMAN}
@@ -71,9 +66,10 @@ unset http_proxy
 1. Use las credenciales guardadas del paso anterior para iniciar sesión en Foreman.
 1. Paso opcional. Ejecute:
 
-  ```
-  vagrant up katello
-  ```
+   ```
+   vagrant up katello
+   ```
+   Desafortunadamente existe una condición de carrera durante la primera vez que se ejecuta el arranque por PXE, el servidor de The Foreman no puede bajar tan rápido de Internet las imágenes de `kernel` e `initrd` como la máquina virtual de Katello los puede bajar del servidor The Foreman, lo cual causa que el arranque se realice con un archivo incompleto. Para corregir esto simplemente cierre (apague) la maquina virtual y vuelva a ejecutar el comando `vagrant up katello`.
 
 ## Troubleshooting
 
@@ -89,8 +85,8 @@ vagrant provision
 
 ```
 # localhost >
-vagrant destroy -f
-vagrant up;vagrant provision
+vagrant destroy
+vagrant up
 ```
 
 ### Archivos de log relevantes
@@ -119,3 +115,45 @@ sudo tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log
 1. Porque permite rapidamente crear un nuevo servidor de Foreman para casos de emergencia.
 1. Porque permite trabajar remotamente en temas de aprovisionamiento (para usuarios remotos).
 1. Porque es el primer paso para definir una infraestructura basada en código.
+
+## Desarrollo
+
+Despues de clonar el repositorio instale todas las dependencias con:
+
+```
+./go
+```
+
+Ejecute todas las pruebas con:
+
+```
+./go spec
+```
+
+Experimente con la librería:
+
+```
+bin/console
+```
+
+Para instalar este "gem":
+
+```
+./go install
+```
+
+Para liberar una nueva versión, editar el archivo `version.rb` y luego:
+
+```
+./go release
+```
+
+Esto creara un "tag" en git para la versión dada. Hará "push" de los commits y tags y por ultimo "push" del `.gem` a [Katello](http://katello.udistritaloas.edu.co).
+
+## Contribuciones
+
+Reportes de bugs y "pull requests" son bienvenidos en GitHub en https://github.com/udistrital/oasforeman.
+
+## Licencia
+
+Este "gem" esta disponible como "open source" bajo los terminos de la [Licencia MIT](http://opensource.org/licenses/MIT).
