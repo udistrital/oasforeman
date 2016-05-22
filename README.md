@@ -189,7 +189,7 @@ David McNicol explica el proceso en más detalle [en su blog](https://dmcnicks.w
 
 **Nota importante**
 
-Para los demás ambientes (`plataforma`, `pruebas`, `produccion`) se debe generar un nuevo par de llaves PKCS7 y almacenar **ÚNICAMENTE** la parte pública en este repositorio. La llave privada para estos ambientes debe mantenerse en secreto **SIEMPRE**. También se debe respaldar ya que si se llega a extraviar no hay manera de recuperar los valores que fueron encriptados con la llave pública. Fallar proteger la llave privada compromete el ambiente y será necesario no solamente un nuevo par de llaves sino también cambiar todos los valores que fueron encriptados para ella. **Idealmente éste es también es el proceso estándar de _off-board_ de un miembro de equipo con acceso a las llaves**.
+Para los demás ambientes (`plataforma`, `pruebas`, `produccion`) se debe generar un nuevo par de llaves PKCS7 y almacenar **ÚNICAMENTE** la parte pública en este repositorio. La llave privada para estos ambientes debe mantenerse en secreto **SIEMPRE**. También se debe respaldar ya que si se llega a extraviar no hay manera de recuperar los valores que fueron encriptados con la llave pública. Fallar al proteger la llave privada compromete el ambiente y será necesario no solamente un nuevo par de llaves sino también cambiar todos los valores que fueron encriptados para ella. **Idealmente éste es también es el proceso estándar de _off-board_ de un miembro de equipo con acceso a las llaves**.
 
 ## Enlaces
 
