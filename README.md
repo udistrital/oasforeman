@@ -27,12 +27,12 @@ unset http_proxy
 ## ¿Cómo usar esto?
 
 1. Necesita un equipo con al menos 4GB (8GB si además quiere aprovisionar Katello) libres de memoria.
-1. Clonar este repositorio en tu estación de trabajo.
+1. Clone este repositorio en tu estación de trabajo.
 
    ```
    git clone https://github.com/udistrital/oasforeman.git
    ```
-1. Entrar al directorio de checkout.
+1. Entre al directorio de checkout.
 
     ```
     cd oasforeman
@@ -172,7 +172,7 @@ chmod -R 550 keys
 chmod 440 keys/desarrollo/private.pem keys/desarrollo/public.pem
 ```
 
-Creé o edite valores encriptados de esta manera:
+Cree o edite valores encriptados de esta manera:
 
 ```
 git clone https://github.com/udistrital/oashiera.git
@@ -189,7 +189,7 @@ David McNicol explica el proceso en más detalle [en su blog](https://dmcnicks.w
 
 **Nota importante**
 
-Para los demás ambientes (`plataforma`, `pruebas`, `produccion`) se debe generar un nuevo par de llaves PKCS7 y almacenar **UNICAMENTE** la parte pública en este repositorio. La llave privada para estos ambientes debe mantenerse en secreto **SIEMPRE**. También se debe respaldar ya que si se llega a extraviar no hay manera de recuperar los valores que fueron encriptados con la llave pública. Fallar proteger la llave privada compromete el ambiente y será necesario no solamente un nuevo par de llaves si no también cambiar todos los valores que fueron encriptados para ella. **Idealmente éste es también es el proceso estándar de _off-board_ de un miembro de equipo con acceso a las llaves**.
+Para los demás ambientes (`plataforma`, `pruebas`, `produccion`) se debe generar un nuevo par de llaves PKCS7 y almacenar **ÚNICAMENTE** la parte pública en este repositorio. La llave privada para estos ambientes debe mantenerse en secreto **SIEMPRE**. También se debe respaldar ya que si se llega a extraviar no hay manera de recuperar los valores que fueron encriptados con la llave pública. Fallar proteger la llave privada compromete el ambiente y será necesario no solamente un nuevo par de llaves sino también cambiar todos los valores que fueron encriptados para ella. **Idealmente éste es también es el proceso estándar de _off-board_ de un miembro de equipo con acceso a las llaves**.
 
 ## Enlaces
 
