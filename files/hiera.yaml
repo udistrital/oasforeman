@@ -12,5 +12,5 @@
 :hierarchy:
   - defaults
   - "%{clientcert}"
-  - "%{environment}"
+  - "ambientes/%{environment}"
   - global
