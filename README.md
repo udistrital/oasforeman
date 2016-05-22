@@ -176,7 +176,7 @@ Cree o edite valores encriptados de esta manera:
 
 ```
 git clone https://github.com/udistrital/oashiera.git
-EDITOR=gedit eyaml --edit --pkcs7-private-key=keys/desarrollo/private.pem --pkcs7-public-key=keys/desarrollo/public.pem oashiera/ambientes/desarrollo/ARCHIVO/A/EDITAR.yaml
+EDITOR=gedit eyaml edit --pkcs7-private-key=keys/desarrollo/private.pem --pkcs7-public-key=keys/desarrollo/public.pem oashiera/ambientes/desarrollo.yaml
 cd oashiera
 git checkout -b configuracion/NUMERO-DE-TRACK-AQUI-editar-configuracion-x
 git add .
