@@ -161,7 +161,7 @@ Esto creara un "tag" en git para la versión dada. Hará "push" de los commits y
 
 ### Desarrollo
 
-El ambiente de desarrollo está definido como lo que se puede hacer con este repositorio usando los comandos `vagrant` listados anteriormente en la sección "¿Cómo usar esto?. La llave privada de desarrollo está guardada en este repositorio y se encuentra en la ubicación `keys/desarrollo/private.pem`, la llave pública está guardada en `keys/desarrollo/public.pem`, mantener la llave privada visible al público no debe por ningún motivo representar un problema de seguridad pues el propósito únicamente es servir para desarrollo local.
+El ambiente de desarrollo está definido como lo que se puede hacer con este repositorio usando los comandos `vagrant` listados anteriormente en la sección "_¿Cómo usar esto?_". La llave privada de desarrollo está guardada en este repositorio y se encuentra en la ubicación `keys/desarrollo/private.pem`, la llave pública está guardada en `keys/desarrollo/public.pem`, mantener la llave privada visible al público no debe por ningún motivo representar un problema de seguridad pues el propósito únicamente es servir para desarrollo local.
 
 Las llaves fueron creadas así
 
@@ -189,7 +189,7 @@ David McNicol explica el proceso en más detalle [en su blog](https://dmcnicks.w
 
 **Nota importante**
 
-Para los demás ambientes (`plataforma`, `pruebas`, `produccion`) se debe generar un nuevo par de llaves PKCS7 y almacenar *UNICAMENTE* la parte pública en este repositorio. La llave privada para estos ambientes debe mantenerse en secreto *SIEMPRE*. También se debe respaldar ya que si se llega a extraviar no hay manera de recuperar los valores que fueron encriptados con la llave pública. Fallar proteger la llave privada compromete el ambiente y será necesario no solamente un nuevo par de llaves si no también cambiar todos los valores que fueron encriptados para ella. **Idealmente éste es también es el proceso estándar de _off-board_ de un miembro de equipo con acceso a las llaves**.
+Para los demás ambientes (`plataforma`, `pruebas`, `produccion`) se debe generar un nuevo par de llaves PKCS7 y almacenar **UNICAMENTE** la parte pública en este repositorio. La llave privada para estos ambientes debe mantenerse en secreto **SIEMPRE**. También se debe respaldar ya que si se llega a extraviar no hay manera de recuperar los valores que fueron encriptados con la llave pública. Fallar proteger la llave privada compromete el ambiente y será necesario no solamente un nuevo par de llaves si no también cambiar todos los valores que fueron encriptados para ella. **Idealmente éste es también es el proceso estándar de _off-board_ de un miembro de equipo con acceso a las llaves**.
 
 ## Enlaces
 
