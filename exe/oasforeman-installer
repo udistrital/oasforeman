@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+# Esta es una version menos flexible
+# pero mas especifica para las necesidades de OAS
+# es como un comando `foreman-installer` pero desatendido
+
+require "bundler/setup"
+require "oasforeman"
+

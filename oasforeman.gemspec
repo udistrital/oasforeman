@@ -26,9 +26,12 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+  spec.executables   << "oasforeman"
+  spec.executables   << "oasforeman-installer"
 
   spec.add_development_dependency "bundler", "~> 1.12"
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
-  spec.add_development_dependency "hiera", "~> 3.2.0"
+  spec.add_development_dependency "hiera", "~> 1.3.4"
+  spec.add_development_dependency "hammer_cli_foreman", "~> 0.6.2"
 end

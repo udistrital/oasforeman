@@ -9,3 +9,7 @@
 /tmp/
 /.vagrant/
 *.swp
+oasforeman
+oashiera
+oaspuppet
+*.pem

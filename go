@@ -28,7 +28,7 @@ fi
 
 if ! bundle check &> $dev_null
 then
-  bin/setup
+  exe/setup
 fi
 
 if ! $rake --version &> $dev_null

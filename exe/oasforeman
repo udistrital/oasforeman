@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+# Esta es una version menos flexible
+# pero mas especifica para las necesidades de OAS
+# es como un comando `hammer` pero desatendido
+
+require "bundler/setup"
+require "oasforeman"
+require 'hammer_cli/settings'
+
+HammerCLI::Settings.load_from_paths ['~/.hammer/']
+
+require 'hammer_cli_foreman'

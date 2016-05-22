@@ -1,0 +1,16 @@
+---
+:backends:
+  - eyaml
+  - yaml
+:yaml:
+  :datadir:
+:eyaml:
+  :datadir:
+  :extension: yaml
+  :pkcs7_private_key: /root/.hiera_pkcs7_private_key.pem
+  :pkcs7_public_key: /root/.hiera_pkcs7_public_key.pem
+:hierarchy:
+  - defaults
+  - "%{clientcert}"
+  - "%{environment}"
+  - global

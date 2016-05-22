@@ -59,6 +59,7 @@ katello_provision_fqdn = katello_fqdn
 
 # foreman installer options for first run
 foreman_installer_options_1 = [
+  "-v",
   "--detailed-exitcodes",
   "--enable-foreman-compute-ovirt",
   "--enable-foreman-compute-ec2",
