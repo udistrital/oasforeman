@@ -119,7 +119,6 @@ vagrant ssh
 sudo tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log /var/log/foreman-proxy/proxy.log
 ```
 
-
 ## ¿Por qué esto es relevante?
 
 1. Porque ayuda a probar nuevas funcionalidades en un ambiente aislado.
