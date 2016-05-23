@@ -213,9 +213,11 @@ Para los demás ambientes (`plataforma`, `pruebas`, `produccion`) se debe genera
  * Añadir soporte para el ambiente de pruebas.
  * Automatizar las pruebas con un sistema de CI.
  * Añadir soporte para mas ambientes.
+ * Aprovisionar Katello y hacer integración con él.
  * Utilizar hiera para hacer el proceso de aprovisionamiento más "data-driven".
  * Utilizar el repositorio oaspuppet para hacer las primeras configuraciones utilizando módulos de Puppet.
  * Utilizar el repositorio oashiera para hacer las primeras parametrizaciones de configuración utilizando Hiera.
+ * Hacer la distribución completa en forma de "gem". Más CI para compilación y empaquetamiento.
 
 ## Enlaces
 
