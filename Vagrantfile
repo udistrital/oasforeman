@@ -55,7 +55,10 @@ katello_provision_mac = "0A5C0DE50002" # OAS Codes 0002
 foreman_provision_domains_parts = ([ foreman_provision_domain ] + foreman_provision_extra_domains)
 foreman_provision_domains = foreman_provision_domains_parts.join(",")
 foreman_fqdn = "#{foreman_hostname}.#{foreman_local_domain}"
-foreman_url = "https://#{foreman_fqdn}"
+foreman_remote_access = foreman_ip # o foreman_fqdn
+foreman_url = "https://#{foreman_remote_access}"
+foreman_proxy_puppet_url = "https://#{foreman_remote_access}:8140/"
+foreman_proxy_template_url = "http://#{foreman_remote_access}:8000/"
 # katello
 katello_fqdn = "#{katello_hostname}.#{katello_local_domain}"
 katello_provision_fqdn = katello_fqdn
@@ -82,6 +85,9 @@ foreman_installer_options_1 = [
   "--foreman-proxy-dns-reverse='#{foreman_provision_reverse_zone}'",
   "--foreman-proxy-dns-forwarders=$(/usr/local/bin/get_nameserver.sh)",
   "--foreman-proxy-foreman-base-url='#{foreman_url}'",
+  "--foreman-proxy-template-url=#{foreman_proxy_template_url}",
+  "--foreman-proxy-puppet-url='#{foreman_proxy_puppet_url}'",
+  "--puppet-server-foreman-url='#{foreman_url}'",
   "--puppet-environment=#{puppet_environment}",
   "--puppet-server-git-repo-user=git",
   "--puppet-server-git-repo-group=git",
@@ -111,7 +117,7 @@ etc_hosts_file.close
 
 domains_content = {
   foreman_local_domain => {
-    "dns" => foreman_fqdn,
+    "dns" => foreman_ip,
   },
 }
 
@@ -506,7 +512,7 @@ Vagrant.configure(2) do |config|
       echo
       echo git clone #{puppet_repo}
       echo cd #{puppet_repo.split("/").last.gsub /\.git$/, ""}
-      echo git remote add foreman git@#{foreman_fqdn}:puppet.git
+      echo git remote add foreman git@#{foreman_ip}:puppet.git
       echo git push foreman master:#{puppet_environment}
       echo
       echo Iniciar sesión en #{foreman_url}

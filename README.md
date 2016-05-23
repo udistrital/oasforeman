@@ -5,7 +5,7 @@ Todo lo relacionado con **The Foreman** para la OAS.
 
 ![foreman architecture](http://theforeman.org/static/images/foreman_architecture.png)
 
-^This web site is licensed under a Creative Commons Attribution-ShareAlike 3.0 Unported License. Source available: github/theforeman/theforeman.org http://www.theforeman.org/manuals/1.11/index.html^
+<sub>This web site is licensed under a Creative Commons Attribution-ShareAlike 3.0 Unported License. Source available: github/theforeman/theforeman.org http://www.theforeman.org/manuals/1.11/index.html</sub>
 
 Aprovisiona un servidor de [The Foreman](http://theforeman.org/) local.
 
@@ -30,7 +30,7 @@ unset http_proxy
 
 ![vagrant architecture](https://lh4.googleusercontent.com/-KEipFfkfCcI/UyqST0qs9hI/AAAAAAAAAVA/EAyFrIh3lTU/w780-h592-no/django.png)
 
-^© QBurst 2016. All Rights Reserved.Privacy Policy http://blog.qburst.com/2014/03/vagrant-development-environments-made-easy/^
+<sub>&copy; QBurst 2016. All Rights Reserved.Privacy Policy http://blog.qburst.com/2014/03/vagrant-development-environments-made-easy/ (fair use)</sub>
 
 1. Necesita un equipo con al menos 4GB (8GB si además quiere aprovisionar Katello) libres de memoria.
 1. Si no tiene ya un par de llaves RSA de `ssh` generar uno ahora.
