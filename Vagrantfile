@@ -229,10 +229,6 @@ templates_content = {
     "file" => "/tmp/templates/Kickstart_bootstrap_PXELinux.erb",
     "type" => "PXELinux"
   },
-  "Agregar foreman de desarrollo a archivo hosts" => {
-    "file" => "/tmp/templates/Agregar_foreman_de_desarrollo_a_archivo_hosts.erb",
-    "type" => "script"
-  },
 }
 
 templates_file = File.open("tmp/foreman_templates.json", "w")
@@ -256,7 +252,6 @@ default_provision_config_templates = [
   "Kickstart default",
   "Kickstart default finish",
   "Kickstart default user data",
-  "Agregar foreman de desarrollo a archivo hosts",
 ]
 
 additional_config_templates = [

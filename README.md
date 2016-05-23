@@ -3,9 +3,13 @@ oasforeman
 
 Todo lo relacionado con **The Foreman** para la OAS.
 
-![foreman architecture](http://theforeman.org/static/images/foreman_architecture.png)
+![The Foreman architecture](http://theforeman.org/static/images/foreman_architecture.png)
 
 <sub>This web site is licensed under a Creative Commons Attribution-ShareAlike 3.0 Unported License. Source available: github/theforeman/theforeman.org http://www.theforeman.org/manuals/1.11/index.html</sub>
+
+![Puppet architecture](https://docs.puppet.com/images/Puppet_Star.png) ![Puppet layers](https://docs.puppet.com/images/Puppet_Layers.png)
+
+<sub>&copy; 2016 Puppet https://docs.puppet.com/guides/introduction.html</sub>
 
 Aprovisiona un servidor de [The Foreman](http://theforeman.org/) local.
 
@@ -169,7 +173,7 @@ Esto creara un "tag" en git para la versión dada. Hará "push" de los commits y
 
 ## Ambientes
 
-
+![Hiera config](http://i.imgur.com/f5xMRR8.png) ![Hiera hiera](http://i.imgur.com/V1oLrOz.png)
 
 ### Desarrollo
 
@@ -203,6 +207,15 @@ David McNicol explica el proceso en más detalle [en su blog](https://dmcnicks.w
 **Nota importante**
 
 Para los demás ambientes (`plataforma`, `pruebas`, `produccion`) se debe generar un nuevo par de llaves PKCS7 diferentes para cada ambiente y almacenar **ÚNICAMENTE** la parte pública en este repositorio. La llave privada para estos ambientes debe mantenerse en secreto **SIEMPRE**. También se debe respaldar ya que si se llega a extraviar no hay manera de recuperar los valores que fueron encriptados con la llave pública. Fallar al proteger la llave privada compromete el ambiente y será necesario no solamente un nuevo par de llaves sino también cambiar todos los valores que fueron encriptados para ella (la llave privada). Idealmente éste es también es el proceso estándar de _off-board_ de un miembro de equipo con acceso a las llaves.
+
+## Roadmap
+
+ * Añadir soporte para el ambiente de pruebas.
+ * Automatizar las pruebas con un sistema de CI.
+ * Añadir soporte para mas ambientes.
+ * Utilizar hiera para hacer el proceso de aprovisionamiento más "data-driven".
+ * Utilizar el repositorio oaspuppet para hacer las primeras configuraciones utilizando módulos de Puppet.
+ * Utilizar el repositorio oashiera para hacer las primeras parametrizaciones de configuración utilizando Hiera.
 
 ## Enlaces
 
