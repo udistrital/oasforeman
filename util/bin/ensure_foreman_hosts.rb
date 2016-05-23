@@ -26,8 +26,8 @@ if File.exists? options[:source]
       # hammer_cmd_parts.push "update '--name=#{host_name}'" - actualizar un host es complejo
       hammer_cmd_parts.pop
       hammer_cmd_parts.push "echo hammer host update '--name=#{host_name}'"
-      STDERR.puts "Updating of hosts is complex and is not supported yet!"
-      STDERR.puts "if you wanna use this as the method to provision again"
+      STDERR.puts "Updating a host is complex and is not supported yet!"
+      STDERR.puts "if you want to use this as the method of provision"
       STDERR.puts "delete the host and re-provision again"
       STDERR.puts "or execute the 'hammer host update' command bellow"
       STDERR.puts "after removing the problematic parts"

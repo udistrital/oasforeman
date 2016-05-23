@@ -9,6 +9,9 @@ if not File.exists? "tmp"
 end
 
 proxy = "#{ENV["http_proxy"]}"
+puppet_environment = "desarrollo"
+hiera_repo = "https://github.com/andresvia/oashiera.git"
+puppet_repo = "https://github.com/andresvia/oaspuppet.git"
 
 # general foreman settings
 foreman_ip = "192.168.12.42"
@@ -59,7 +62,6 @@ katello_provision_fqdn = katello_fqdn
 
 # foreman installer options for first run
 foreman_installer_options_1 = [
-  "-v",
   "--detailed-exitcodes",
   "--enable-foreman-compute-ovirt",
   "--enable-foreman-compute-ec2",
@@ -80,6 +82,11 @@ foreman_installer_options_1 = [
   "--foreman-proxy-dns-reverse='#{foreman_provision_reverse_zone}'",
   "--foreman-proxy-dns-forwarders=$(/usr/local/bin/get_nameserver.sh)",
   "--foreman-proxy-foreman-base-url='#{foreman_url}'",
+  "--puppet-environment=#{puppet_environment}",
+  "--puppet-server-git-repo-user=git",
+  "--puppet-server-git-repo-group=git",
+  "--puppet-server-git-repo-mode=0755",
+  "--puppet-server-git-repo-path=/home/git/puppet.git",
 ]
 
 # foreman installer options for second run (link proxy)
@@ -183,6 +190,8 @@ hostgroups_content = {
   "grupo-desarrollo" => {
     "environment" => "desarrollo",
     "parent" => "grupo-oas",
+    "medium" => "CentOS mirror",
+    "operatingsystem" => "BootstrapCentOS 7",
   },
   "grupo-pruebas" => {
     "environment" => "pruebas",
@@ -213,7 +222,11 @@ templates_content = {
   "Kickstart bootstrap PXELinux" => {
     "file" => "/tmp/templates/Kickstart_bootstrap_PXELinux.erb",
     "type" => "PXELinux"
-  }
+  },
+  "Agregar foreman de desarrollo a archivo hosts" => {
+    "file" => "/tmp/templates/Agregar_foreman_de_desarrollo_a_archivo_hosts.erb",
+    "type" => "script"
+  },
 }
 
 templates_file = File.open("tmp/foreman_templates.json", "w")
@@ -237,6 +250,7 @@ default_provision_config_templates = [
   "Kickstart default",
   "Kickstart default finish",
   "Kickstart default user data",
+  "Agregar foreman de desarrollo a archivo hosts",
 ]
 
 additional_config_templates = [
@@ -299,9 +313,14 @@ os_default_templates_file = File.open("tmp/foreman_os_default_templates.json", "
 os_default_templates_file.write(JSON.generate(os_default_templates_content))
 os_default_templates_file.close
 
+host_parameters = [ "keymap=es" ]
+if proxy != ""
+  host_parameters.push("proxy=#{proxy}")
+end
+
 hosts_content = {
   "#{katello_fqdn}" => {
-    "hostgroup" => "grupo-bootstrap",
+    "hostgroup" => "grupo-#{puppet_environment}",
     "interface" => [
       {
         "managed" => "false",
@@ -326,6 +345,13 @@ hosts_content = {
     ],
   },
 }
+
+# add parameters if any
+if not host_parameters.empty?
+  hosts_content.each do |host, params|
+    hosts_content[host]["parameters"] = host_parameters.join(",")
+  end
+end
 
 hosts_file = File.open("tmp/foreman_hosts.json", "w")
 hosts_file.write(JSON.generate(hosts_content))
@@ -380,13 +406,22 @@ Vagrant.configure(2) do |config|
     # foreman provision
     foreman.vm.provision "shell", name: "foreman provision 1/3", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
     foreman.vm.provision "shell", name: "foreman provision 2/3", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
-    foreman.vm.provision "shell", name: "foreman provision 3/3", inline: "sudo yum -y -v install foreman-installer"
+    foreman.vm.provision "shell", name: "foreman provision 3/3", inline: "sudo yum -y -v install foreman-installer git-daemon vim"
+
+    # provision git
+    foreman.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "/tmp/id_rsa_pub"
+    foreman.vm.provision "shell", name: "git 1/3", inline: "egrep '^git:' /etc/passwd||sudo useradd -s /usr/bin/git-shell -m -r git"
+    foreman.vm.provision "shell", name: "git 2/3", inline: "sudo /usr/local/bin/ensure_user_authorize_key.rb --authorize-key /tmp/id_rsa_pub --user git"
+    # foreman.vm.provision "shell", name: "git 3/3", inline: "rm -v /tmp/id_rsa_pub"
 
     # foreman install, execute thrice (or maybe twice) to ensure convergency
     foreman.vm.provision "shell", name: "foreman install", inline: "#{foreman_installer_command_1};#{foreman_installer_command_2}||#{foreman_installer_command_2}"
 
+    # puppet environments setup
+    foreman.vm.provision "shell", name: "environments writable by git", inline: "chown root:git /etc/puppet/environments&&chmod 775 /etc/puppet/environments"
+
     # puppet run, execute twice to ensure convergency
-    foreman.vm.provision "shell", name: "puppet run", inline: "sudo puppet agent --test||sudo puppet agent --test"
+    foreman.vm.provision "shell", name: "puppet run", inline: "sudo puppet agent --test 2>/dev/null||true" # nunca fallar porque puede que el ambiente no esté aun
 
     # foreman domains provision
     foreman.vm.provision "file", source: domains_file.path, destination: "/tmp/foreman_domains.json"
@@ -441,10 +476,42 @@ Vagrant.configure(2) do |config|
     # ipxe.lkrn provision
     foreman.vm.provision "shell", name: "ipxe.lkrn", inline: "sudo cp -v /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/ipxe.lkrn"
 
+    # hiera provision
+    foreman.vm.provision "file", source: "files/hiera.yaml", destination: "/tmp/hiera.yaml"
+    foreman.vm.provision "shell", name: "hiera 1/5", inline: "sudo cp -v /tmp/hiera.yaml /etc/hiera.yaml"
+    foreman.vm.provision "shell", name: "hiera 2/5", inline: "sudo chown -v root:root /etc/hiera.yaml"
+    foreman.vm.provision "shell", name: "hiera 3/5", inline: "sudo chmod -v 644 /etc/hiera.yaml"
+    foreman.vm.provision "shell", name: "hiera 4/5", inline: "gem list|grep hiera-eyaml||sudo gem install hiera-eyaml"
+    foreman.vm.provision "shell", name: "hiera 5/5", inline: "sudo rm -v /tmp/hiera.yaml"
+
+    # keys provision
+    foreman.vm.provision "shell", name: "keys 1/7", inline: "sudo rm -rvf /tmp/keys"
+    foreman.vm.provision "file", source: "keys", destination: "/tmp/keys"
+    foreman.vm.provision "shell", name: "keys 2/7", inline: "sudo chown -Rv root:puppet /tmp/keys"
+    foreman.vm.provision "shell", name: "keys 3/7", inline: "sudo chmod -Rv 750 /tmp/keys"
+    foreman.vm.provision "shell", name: "keys 4/7", inline: "sudo chmod -v 751 /tmp/keys"
+    foreman.vm.provision "shell", name: "keys 5/7", inline: "sudo mkdir -vp /etc/eyaml"
+    foreman.vm.provision "shell", name: "keys 6/7", inline: "cd /tmp/keys&&sudo tar cf - .|sudo tar xvf - -C /etc/eyaml"
+    foreman.vm.provision "shell", name: "keys 7/7", inline: "sudo rm -rv /tmp/keys"
+
+    # hiera repo provision
+    foreman.vm.provision "shell", name: "hiera repo 1/3", inline: "test ! -d /var/lib/hiera||test -d /var/lib/hiera/.git||rm -rv /var/lib/hiera"
+    foreman.vm.provision "shell", name: "hiera repo 2/3", inline: "test -d /var/lib/hiera/.git||(cd /var/lib&&sudo git clone #{hiera_repo} hiera)"
+    foreman.vm.provision "shell", name: "hiera repo 3/3", inline: "cd /var/lib/hiera&&sudo git pull"
+
     # show the url and the generated admin password
     foreman.vm.provision "shell", name: "fin", inline: <<-FIN
-      echo Ya puede iniciar sesión en #{foreman_url}
+      echo
+      echo Ya puede:
+      echo
+      echo git clone #{puppet_repo}
+      echo cd #{puppet_repo.split("/").last.gsub /\.git$/, ""}
+      echo git remote add foreman git@#{foreman_fqdn}:puppet.git
+      echo git push foreman master:#{puppet_environment}
+      echo
+      echo Iniciar sesión en #{foreman_url}
       echo La contraseña inicial del usuario admin es: $(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param admin_password)
+      echo
     FIN
   end
 

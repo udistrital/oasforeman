@@ -2,6 +2,7 @@
 
 require "optparse"
 require "json"
+require "fileutils"
 
 options = { :source => "" }
 HAMMER = "hammer --output=json"

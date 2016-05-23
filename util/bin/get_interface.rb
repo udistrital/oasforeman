@@ -3,7 +3,7 @@
 require "optparse"
 require "facter"
 
-options = {}
+options = { :ip => "" }
 OptionParser.new do |opts|
   opts.on("--ip=", "IP address") do |value|
     options[:ip] = value

@@ -13,9 +13,9 @@ rake=${OAS_RAKE:-bundle exec rake}
 if ! type ruby &> $dev_null
 then
   echo "ruby no instalado"
-  echo "centos"
+  echo "centos:"
   echo "sudo yum install -y ruby"
-  echo "macosx"
+  echo "macosx:"
   echo "rbenv install"
   exit 1
 fi
