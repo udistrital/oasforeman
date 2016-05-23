@@ -56,7 +56,8 @@ foreman_provision_domains_parts = ([ foreman_provision_domain ] + foreman_provis
 foreman_provision_domains = foreman_provision_domains_parts.join(",")
 foreman_fqdn = "#{foreman_hostname}.#{foreman_local_domain}"
 foreman_remote_access = foreman_ip # o foreman_fqdn
-foreman_url = "https://#{foreman_remote_access}"
+foreman_remote_access_url = "https://#{foreman_remote_access}"
+foreman_url = "https://#{foreman_fqdn}"
 foreman_proxy_puppet_url = "https://#{foreman_remote_access}:8140/"
 foreman_proxy_template_url = "http://#{foreman_remote_access}:8000/"
 # katello
@@ -503,14 +504,14 @@ Vagrant.configure(2) do |config|
     # show the url and the generated admin password
     foreman.vm.provision "shell", name: "fin", inline: <<-FIN
       echo
-      echo Ya puede:
+      echo Ya puede hacer:
       echo
       echo git clone #{puppet_repo}
       echo cd #{puppet_repo.split("/").last.gsub /\.git$/, ""}
       echo git remote add foreman git@#{foreman_ip}:puppet.git
       echo git push foreman master:#{puppet_environment}
       echo
-      echo Iniciar sesión en #{foreman_url}
+      echo Iniciar sesión en #{[foreman_url, foreman_remote_access_url].uniq.join(" o ")}
       echo La contraseña inicial del usuario admin es: $(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param admin_password)
       echo
     FIN
