@@ -332,8 +332,9 @@ os_default_templates_file.write(JSON.generate(os_default_templates_content))
 os_default_templates_file.close
 
 hosts_parameters = [ "oasforeman_foreman_ip=#{foreman_ip}", "oasforeman_foreman_fqdn=#{foreman_fqdn}", "oasforeman_foreman_hostname=#{foreman_hostname}" ]
+# solo durante desarrollo agregar el proxy así en otros ambientes será un setting del host específicamente
 if proxy != ""
-  hosts_parameters.push("proxy=#{proxy}")
+  hosts_parameters.push("http-proxy=#{proxy}")
 end
 
 hosts_content = {
