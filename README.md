@@ -167,7 +167,9 @@ Esto creara un "tag" en git para la versión dada. Hará "push" de los commits y
 
 ## Ambientes
 
-![Hiera config](http://i.imgur.com/xz80uzN.png) ![Hiera hiera](http://i.imgur.com/V1oLrOz.png)
+![Hiera config](http://i.imgur.com/cINb8Lj.png)
+
+![Hiera hiera](http://i.imgur.com/vEQDSTR.png)
 
 ### Desarrollo
 
