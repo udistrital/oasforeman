@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
   spec.executables   << "oasforeman"
   spec.executables   << "oasforeman-installer"
 
-  spec.add_development_dependency "bundler", "~> 1.12"
+  spec.add_development_dependency "bundler", "~> 1.7.8"
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "hiera", "~> 1.3.4"

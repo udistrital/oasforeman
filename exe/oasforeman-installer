@@ -4,6 +4,7 @@
 # pero mas especifica para las necesidades de OAS
 # es como un comando `foreman-installer` pero desatendido
 
+require "fileutils"
 require "yaml/store"
 require "hiera"
 require "yaml"
@@ -12,7 +13,23 @@ require "oasforeman"
 require "optparse"
 require "oasforeman/installer"
 
-options = {}
+config_paths = [ "#{Dir.home/.oasforemand}" ]
+
+if Process.uid == 0
+  if File.exists? "/etc/oasforemand"
+    config_paths.push "/etc/oasforemand"
+  end
+end
+
+config_path = config_paths.pop
+
+if File.exists? config_path
+  FileUtils.mkdir_p config_path
+end
+
+exit 0
+
+option = {}
 OptionParser.new do |opts|
   opts.on("--hiera-scope YAML", "In YAML format") do |value|
     options[:"hiera-scope"] = value

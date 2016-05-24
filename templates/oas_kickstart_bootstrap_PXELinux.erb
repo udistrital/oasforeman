@@ -5,7 +5,7 @@ oses:
 - CentOS 7
 %>
 
-# inicio pxelinux: oas_kickstart_bootstrap_pxelinux
+# inicio PXELinux: oas_kickstart_bootstrap_PXELinux
 
 # Esta plantilla esta basada en "Kickstart default PXELinux"
 # remueve el soporte para otros sistemas operativos y tambien
@@ -21,12 +21,19 @@ oses:
 # blacklist = module1, module2
 #   Blacklisted kernel modules
 #
+# oasforeman_*
+#   Parametros para personalizacion de kickstart
+#
+# oasforeman_param1 = the value
+#
+# En la plantilla oas_kickstart_bootstrap_provision $param1 estara disponible despues de incluir el snippet oas_foreman_vars_snippet uselo para pasar informacion al kickstart de provision.
+#
 <%
   options = []
   if @host.params['blacklist']
     options << "modprobe.blacklist=" + @host.params['blacklist'].gsub(' ', '')
   end
-  @host.params.each do |param, value|
+  @host.params.select{|k,v| k =~ /^oasforeman_/ }.each do |param, value|
     options << "#{param}=#{value.gsub(' ', '_')}"
   end
   options = options.join(' ')
@@ -39,5 +46,5 @@ LABEL linux
 KERNEL <%= @kernel %>
 APPEND initrd=<%= @initrd %> ks=<%= foreman_url('provision')%> network ks.sendmac ksdevice=<%= @host.primary_interface.identifier %> <%= options %>
 
-# fin pxelinux
+# fin PXELinux
 

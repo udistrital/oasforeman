@@ -17,8 +17,10 @@ end
 
 proxy = "#{ENV["http_proxy"]}"
 puppet_environment = "desarrollo"
-hiera_repo = "https://github.com/andresvia/oashiera.git"
-puppet_repo = "https://github.com/andresvia/oaspuppet.git"
+hiera_repo = "https://github.com/udistrital/oashiera.git"
+puppet_repo = "https://github.com/udistrital/oaspuppet.git"
+devel_packages = "vim ruby-devel"
+devel_groups = [ "Development Tools" ]
 
 # general foreman settings
 foreman_ip = "192.168.12.42"
@@ -433,7 +435,11 @@ Vagrant.configure(2) do |config|
     # foreman provision
     foreman.vm.provision "shell", name: "foreman prepare 1/3", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
     foreman.vm.provision "shell", name: "foreman prepare 2/3", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
-    foreman.vm.provision "shell", name: "foreman prepare 3/3", inline: "sudo yum -y -v install foreman-installer git-daemon vim"
+    foreman.vm.provision "shell", name: "foreman prepare 3/3", inline: "sudo yum -y -v install foreman-installer git-daemon #{devel_packages}"
+
+    devel_groups.each do |devel_group|
+      foreman.vm.provision "shell", name: devel_group, inline: "sudo yum -y -v groupinstall '#{devel_group}'"
+    end
 
     # provision git
     foreman.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "/tmp/id_rsa_pub"
