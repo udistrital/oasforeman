@@ -99,7 +99,6 @@ vagrant provision
 ### Borrar todo y comenzar de cero
 
 ```
-# localhost >
 vagrant destroy
 vagrant up
 ```
@@ -114,21 +113,16 @@ vagrant up
 Ver todos a la vez con:
 
 ```
-# localhost >
-vagrant ssh
-```
-
-```
-# foreman1 >
-sudo tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log /var/log/foreman-proxy/proxy.log
+vagrant ssh -c "sudo tail -f /var/log/boot.log /var/log/messages /var/log/foreman/production.log /var/log/foreman-proxy/proxy.log"
 ```
 
 ## ¿Por qué esto es relevante?
 
 1. Porque ayuda a probar nuevas funcionalidades en un ambiente aislado.
-1. Porque define claramente el proceso de aprovisionamiento del servidor Foreman.
+1. Porque define claramente el proceso de aprovisionamiento del servidor de The Foreman.
 1. Porque permite trabajar remotamente en temas de aprovisionamiento (para usuarios remotos).
 1. Porque es el primer paso para definir una infraestructura basada en código.
+1. Para reconciliar y unificar las visiones del mundo en cuanto a infraestructura en la OAS.
 
 ## Desarrollo
 
@@ -173,7 +167,7 @@ Esto creara un "tag" en git para la versión dada. Hará "push" de los commits y
 
 ## Ambientes
 
-![Hiera config](http://i.imgur.com/f5xMRR8.png) ![Hiera hiera](http://i.imgur.com/V1oLrOz.png)
+![Hiera config](http://i.imgur.com/xz80uzN.png) ![Hiera hiera](http://i.imgur.com/V1oLrOz.png)
 
 ### Desarrollo
 

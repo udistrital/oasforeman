@@ -13,3 +13,4 @@ oasforeman
 oashiera
 oaspuppet
 *.pem
+force_foreman_install

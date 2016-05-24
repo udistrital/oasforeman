@@ -1,0 +1,174 @@
+<%#
+kind: provision
+name: oas_kickstart_bootstrap_provision
+oses:
+- CentOS 7
+%>
+<%#
+Esta plantilla fue adaptada "Kickstart default" según las necesidades de las OAS
+se deja compatible solamente con CentOS 7 y se adiciona un snippet
+para que funcione sin servicio de DNS.
+
+This template accepts the following parameters:
+- lang: string (default="en_US.UTF-8")
+- selinux: string (default="enforcing")
+- keyboard: string (default="us")
+- time-zone: string (default="UTC")
+- http-proxy: string (default=undef)
+- force-puppet: boolean (default=false)
+- enable-puppetlabs-repo: boolean (default=false)
+- ntp-server: string (default="0.fedora.pool.ntp.org")
+- bootloader-append: string (default="nofb quiet splash=quiet")
+%>
+# inicio provision: oas_kickstart_bootstrap_provision
+<%
+  rhel_compatible = true
+  os_major = @host.operatingsystem.major.to_i
+  realm_compatible = true
+  pm_set = @host.puppetmaster.empty? ? false : true
+  proxy_uri = @host.params['http-proxy']
+  proxy_string = proxy_uri ? " --proxy=#{proxy_uri}" : ''
+  puppet_enabled = pm_set || @host.param_true?('force-puppet')
+%>
+install
+<%= @mediapath %><%= proxy_string %>
+lang <%= @host.params['lang'] || 'en_US.UTF-8' %>
+selinux --<%= @host.params['selinux'] || 'enforcing' %>
+keyboard <%= @host.params['keyboard'] || 'us' %>
+skipx
+
+<% subnet = @host.subnet -%>
+<% if subnet.respond_to?(:dhcp_boot_mode?) -%>
+<% dhcp = subnet.dhcp_boot_mode? && !@static -%>
+<% else -%>
+<% dhcp = !@static -%>
+<% end -%>
+
+network --bootproto <%= dhcp ? 'dhcp' : "static --ip=#{@host.ip} --netmask=#{subnet.mask} --gateway=#{subnet.gateway} --nameserver=#{[subnet.dns_primary, subnet.dns_secondary].select(&:present?).join(',')}" %> --hostname <%= @host %> --device=<%= @host.mac %>
+
+rootpw --iscrypted <%= root_pass %>
+firewall --service=ssh
+authconfig --useshadow --passalgo=sha256 --kickstart
+timezone --utc <%= @host.params['time-zone'] || 'UTC' %>
+<% if rhel_compatible -%>
+services --disabled gpm,sendmail,cups,pcmcia,isdn,rawdevices,hpoj,bluetooth,openibd,avahi-daemon,avahi-dnsconfd,hidd,hplip,pcscd
+<% end -%>
+
+<% if realm_compatible && @host.info['parameters']['realm'] && @host.realm && @host.realm.realm_type == 'Active Directory' -%>
+# One-time password will be requested at install time. Otherwise, $HOST[OTP] is used as a placeholder value.
+realm join --one-time-password='<%= @host.otp || "$HOST[OTP]" %>' <%= @host.realm %>
+<% end -%>
+
+<% if rhel_compatible -%>
+repo --name="EPEL" --mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-<%= @host.operatingsystem.major %>&arch=<%= @host.architecture %><%= proxy_string %>
+<% if puppet_enabled && @host.param_true?('enable-puppetlabs-repo') -%>
+repo --name=puppetlabs-products --baseurl=http://yum.puppetlabs.com/el/<%= @host.operatingsystem.major %>/products/<%= @host.architecture %><%= proxy_string %>
+repo --name=puppetlabs-deps --baseurl=http://yum.puppetlabs.com/el/<%= @host.operatingsystem.major %>/dependencies/<%= @host.architecture %><%= proxy_string %>
+<% end -%>
+<% end -%>
+
+bootloader --location=mbr --append="<%= @host.params['bootloader-append'] || 'nofb quiet splash=quiet' %>" <%= grub_pass %>
+
+<% if @dynamic -%>
+%include /tmp/diskpart.cfg
+<% else -%>
+<%= @host.diskLayout %>
+<% end -%>
+
+text
+<% if @host.respond_to?(:bootdisk_build?) && @host.bootdisk_build? -%>
+reboot --eject
+<% else -%>
+reboot
+<% end -%>
+
+%packages
+yum
+dhclient
+ntp
+wget
+@Core
+redhat-lsb-core
+epel-release
+<% if puppet_enabled -%>
+puppet
+<% if @host.param_true?('enable-puppetlabs-repo') -%>
+puppetlabs-release
+<% end -%>
+<% end -%>
+%end
+
+<% if @dynamic -%>
+%pre
+<%= @host.diskLayout %>
+%end
+<% end -%>
+
+%post --nochroot
+exec < /dev/tty3 > /dev/tty3
+#changing to VT 3 so that we can see whats going on....
+/usr/bin/chvt 3
+(
+cp -va /etc/resolv.conf /mnt/sysimage/etc/resolv.conf
+/usr/bin/chvt 1
+) 2>&1 | tee /mnt/sysimage/root/install.postnochroot.log
+%end
+
+%post
+logger "Starting anaconda <%= @host %> postinstall"
+exec < /dev/tty3 > /dev/tty3
+#changing to VT 3 so that we can see whats going on....
+/usr/bin/chvt 3
+(
+<% if subnet.respond_to?(:dhcp_boot_mode?) -%>
+<%= snippet 'kickstart_networking_setup' %>
+<% end -%>
+
+#update local time
+echo "updating system time"
+/usr/sbin/ntpdate -sub <%= @host.params['ntp-server'] || '0.fedora.pool.ntp.org' %>
+/usr/sbin/hwclock --systohc
+
+<% if @host.info['parameters']['realm'] && @host.realm && @host.realm.realm_type == 'FreeIPA' -%>
+<%= snippet 'freeipa_register' %>
+<% end -%>
+
+<% if proxy_uri -%>
+# Yum proxy
+echo '# inicio edit: agregado por kickstart' >> /etc/yum.conf
+echo 'proxy = <%= proxy_uri %>' >> /etc/yum.conf
+echo '# fin edit' >> /etc/yum.conf
+<% end -%>
+
+# update all the base packages from the updates repository
+yum -t -y -e 0 update
+
+<%= snippet 'remote_execution_ssh_keys' %>
+
+<% if puppet_enabled -%>
+echo "Configuring puppet"
+cat > /etc/puppet/puppet.conf << EOF
+<%= snippet 'puppet.conf' %>
+EOF
+
+# Setup puppet to run on system reboot
+/sbin/chkconfig --level 345 puppet on
+
+/usr/bin/puppet agent --config /etc/puppet/puppet.conf -o --tags no_such_tag <%= @host.puppetmaster.blank? ? '' : "--server #{@host.puppetmaster}" %> --no-daemonize
+<% end -%>
+
+# Agregar la dirección de foreman estaticamente en el archivo hosts asi sabemos que va a funcionar siempre, incluso sin DNS
+<%= snippet 'oas_foreman_vars_snippet' %>
+echo "$oasforeman_foreman_ip $oasforeman_foreman_fqdn $oasforeman_foreman_hostname" >> /etc/hosts
+
+sync
+
+# Inform the build system that we are done.
+echo "Informing Foreman that we are built"
+wget -q -O /dev/null --no-check-certificate <%= foreman_url('built') %>
+) 2>&1 | tee /root/install.post.log
+exit 0
+
+%end
+# fin provision
+

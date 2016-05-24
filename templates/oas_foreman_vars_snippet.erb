@@ -1,0 +1,28 @@
+<%#
+kind: snippet
+name: oas_foreman_vars_snippet
+%>
+
+# inicio snippet: oas_foreman_vars_snippet
+
+# Get the kernel parameters
+params=`cat /proc/cmdline`
+# Split them on spaces
+params_split=(${params// / })
+# Go through each of them
+for p in "${params_split[@]}"
+do
+  # And if it's a key value pair
+  if [[ $p =~ '=' ]]
+  then
+    p_split=(${p//=/ })
+    # And if the key have oasforeman_ on it
+    if [[ $p_split[0] =~ 'oasforeman_' ]]
+    then
+      # Then set the key to the value
+      eval $p
+    fi
+  fi
+done
+
+# fin snippet

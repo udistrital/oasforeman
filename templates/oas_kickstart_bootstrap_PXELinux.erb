@@ -1,9 +1,12 @@
 <%#
 kind: PXELinux
-name: Kickstart bootstrap PXELinux
+name: oas_kickstart_bootstrap_PXELinux
 oses:
 - CentOS 7
 %>
+
+# inicio pxelinux: oas_kickstart_bootstrap_pxelinux
+
 # Esta plantilla esta basada en "Kickstart default PXELinux"
 # remueve el soporte para otros sistemas operativos y tambien
 # remueve la opcion "IPAPPEND 2" dado el "multihomming"
@@ -26,9 +29,12 @@ oses:
   options = options.join(' ')
 -%>
 
+TIMEOUT 200
+TOTALTIMEOUT 6000
 DEFAULT linux
-
 LABEL linux
-    KERNEL <%= @kernel %>
-    APPEND initrd=<%= @initrd %> ks=<%= foreman_url('provision')%> network ks.sendmac ksdevice=<%= @host.primary_interface.identifier %> <%= options %>
+KERNEL <%= @kernel %>
+APPEND initrd=<%= @initrd %> ks=<%= foreman_url('provision')%> network ks.sendmac ksdevice=<%= @host.primary_interface.identifier %> <%= options %>
+
+# fin pxelinux
 

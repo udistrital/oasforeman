@@ -4,8 +4,15 @@
 require "open-uri"
 require "json"
 
+force_foreman_install = false
+
 if not File.exists? "tmp"
   FileUtils.mkdir_p "tmp"
+end
+
+if File.exists? "force_foreman_install"
+  force_foreman_install = true
+  FileUtils.rm_f "force_foreman_install"
 end
 
 proxy = "#{ENV["http_proxy"]}"
@@ -58,8 +65,6 @@ foreman_fqdn = "#{foreman_hostname}.#{foreman_local_domain}"
 foreman_remote_access = foreman_ip # o foreman_fqdn
 foreman_remote_access_url = "https://#{foreman_remote_access}"
 foreman_url = "https://#{foreman_fqdn}"
-foreman_proxy_puppet_url = "https://#{foreman_remote_access}:8140/"
-foreman_proxy_template_url = "http://#{foreman_remote_access}:8000/"
 # katello
 katello_fqdn = "#{katello_hostname}.#{katello_local_domain}"
 katello_provision_fqdn = katello_fqdn
@@ -69,10 +74,10 @@ foreman_installer_options_1 = [
   "--detailed-exitcodes",
   "--enable-foreman-compute-ovirt",
   "--enable-foreman-compute-ec2",
-  "--foreman-foreman-url='#{foreman_url}'",
-  "--puppet-server-git-repo=true",
   "--enable-foreman-plugin-bootdisk",
   "--enable-foreman-proxy",
+  "--foreman-foreman-url='#{foreman_url}'",
+  "--foreman-proxy-foreman-base-url='#{foreman_url}'",
   "--foreman-proxy-tftp=true",
   "--foreman-proxy-tftp-servername='#{foreman_provision_ip}'",
   "--foreman-proxy-dhcp=true",
@@ -85,11 +90,7 @@ foreman_installer_options_1 = [
   "--foreman-proxy-dns-zone='#{foreman_provision_domain}'",
   "--foreman-proxy-dns-reverse='#{foreman_provision_reverse_zone}'",
   "--foreman-proxy-dns-forwarders=$(/usr/local/bin/get_nameserver.sh)",
-  "--foreman-proxy-foreman-base-url='#{foreman_url}'",
-  "--foreman-proxy-template-url=#{foreman_proxy_template_url}",
-  "--foreman-proxy-puppet-url='#{foreman_proxy_puppet_url}'",
-  "--puppet-server-foreman-url='#{foreman_url}'",
-  "--puppet-environment=#{puppet_environment}",
+  "--puppet-server-git-repo=true",
   "--puppet-server-git-repo-user=git",
   "--puppet-server-git-repo-group=git",
   "--puppet-server-git-repo-mode=0755",
@@ -102,8 +103,13 @@ foreman_installer_options_2 = foreman_installer_options_1 + [
   "--foreman-proxy-oauth-consumer-secret=$(sudo /usr/local/bin/get_foreman_answer.rb --classname foreman --param oauth_consumer_secret)",
 ]
 
+foreman_installer_options_3 = foreman_installer_options_2 + [
+  "--puppet-environment=#{puppet_environment}",
+]
+
 foreman_installer_command_1 = "sudo foreman-installer #{foreman_installer_options_1.join(" ")}"
 foreman_installer_command_2 = "sudo foreman-installer #{foreman_installer_options_2.join(" ")}"
+foreman_installer_command_3 = "sudo foreman-installer #{foreman_installer_options_3.join(" ")}"
 
 etc_hosts_content = <<-EOF
 127.0.0.1     localhost localhost.localdomain localhost4 localhost4.localdomain4
@@ -118,7 +124,7 @@ etc_hosts_file.close
 
 domains_content = {
   foreman_local_domain => {
-    "dns" => foreman_ip,
+    "dns" => foreman_fqdn,
   },
 }
 
@@ -225,38 +231,48 @@ media_file = File.open("tmp/foreman_media.json", "w")
 media_file.write(JSON.generate(media_content))
 media_file.close
 
-templates_content = {
-  "Kickstart bootstrap PXELinux" => {
-    "file" => "/tmp/templates/Kickstart_bootstrap_PXELinux.erb",
-    "type" => "PXELinux"
-  },
-}
+templates_content = {}
+
+Dir.glob("templates/*.erb") do |template|
+  template_file = "/tmp/#{template}"
+  template_name = template.gsub(/^templates\//, "").gsub(/\.erb$/, "")
+  template_type = template_name.split("_").last
+  templates_content[template_name] = {
+    "type" => template_type,
+    "file" => template_file,
+  }
+end
 
 templates_file = File.open("tmp/foreman_templates.json", "w")
 templates_file.write(JSON.generate(templates_content))
 templates_file.close
 
-# bootstrap hace boot desde repositorios
-# en internet, este es el default para bootstrap
+#
+# todo host necesita al menos 3 plantillas de aprovisionamiento, PXE, PROVISION y FINISH, tenemos 2 grupos básicos de hosts:
+#
+#  - el grupo bootstrap que son todos aquellos para comenzar a formar un sitio por ejemplo para formar el host que servirá de repositorio de paquetes
+#  - el grupo de todo lo demás, este grupo debería tener un método de boot compartido por eso se utiliza "default"
+#
+
+# el grupo bootstrap hace boot desde repositorios en internet, este es el default para bootstrap
 bootstrap_pxe_config_templates = [
-  "Kickstart bootstrap PXELinux", # esta es custom made
+  "oas_kickstart_bootstrap_PXELinux",  # PXE
+  "oas_kickstart_bootstrap_provision", # PROVISION
 ]
 
-# default hace boot desde repositorios
-# locales
+# todo lo demás que no es grupo de bootstrap hace boot por repositorios locales y esta por definir completamente como será pues depende de tener listo aunque sea el repositorio de paquetes
 default_pxe_config_templates = [
-  "PXELinux chain iPXE",
-  "Kickstart default iPXE",
+  "Kickstart default PXELinux",        # PXE
+  "Kickstart default",                 # PROVISION
 ]
 
+# estas plantillas son comunes a los dos grandes grupos de hosts, todos necesitan hacer finish
 default_provision_config_templates = [
-  "Kickstart default",
-  "Kickstart default finish",
-  "Kickstart default user data",
+  "Kickstart default finish",          # FINISH
 ]
 
+# el resto son plantillas seleccionables para el OS pero nunca van a ser el default están aquí por flexibilidad
 additional_config_templates = [
-  "Kickstart default PXELinux",
 ]
 
 bootstrap_config_templates = bootstrap_pxe_config_templates + default_provision_config_templates
@@ -265,24 +281,24 @@ default_config_templates   =   default_pxe_config_templates + default_provision_
 all_config_templates = bootstrap_pxe_config_templates + default_pxe_config_templates + default_provision_config_templates + additional_config_templates
 
 oses_content = {
+  "BootstrapCentOS 7" => {
+      "name" => "BootstrapCentOS",
+      "major" => "7", # en mirror 7 es un enlace al "latest" bueno para bootstrapear pero no para estabilidad
+      "architectures" => "i386,x86_64",
+      "family" => "Redhat",
+      "media" => "CentOS mirror", # las imagenes de boot no estan en vault pero si en mirror [mirror|vault].centos.org/centos/[version]/os/x86_64/images/pxeboot/ lo cual es algo inconveniente pero con lo que se tendrá que lidiar, el sistema operativo de bootstrap se podrá actualizar desatendidamente a su mas reciente versión menor sin control por parte de la definición
+      "partition-tables" => all_partition_tables.join(","),
+      "config-templates" => all_config_templates.join(","),
+  },
   "CentOS 7.2" => {
       "name" => "CentOS",
       "major" => "7",
-      "minor" => "2.1511", # disponible siempre en vault, disponible en mirror solo si es latest
+      "minor" => "2.1511", # disponible siempre en vault, disponible en mirror solo si es latest, ahora es vault pero eventualmente debera ser el repositorio local
       "architectures" => "i386,x86_64",
       "family" => "Redhat",
-      "media" => "CentOS vault", # en vault se mantienen copias archivadas
+      "media" => "CentOS vault", # en vault se mantienen copias archivadas este es un setting temporal mientras se tiene un repositorio local
       "partition-tables" => all_partition_tables.join(","),
-      "config-templates" => all_config_templates.join(",")
-  },
-  "BootstrapCentOS 7" => {
-      "name" => "BootstrapCentOS",
-      "major" => "7", # en mirror 7 es un enlace al "latest"
-      "architectures" => "i386,x86_64",
-      "family" => "Redhat",
-      "media" => "CentOS mirror", # las imagenes de boot no estan en vault pero si en mirror [mirror|vault].centos.org/centos/[version]/os/x86_64/images/pxeboot/
-      "partition-tables" => all_partition_tables.join(","),
-      "config-templates" => all_config_templates.join(",")
+      "config-templates" => all_config_templates.join(","),
   },
 }
 
@@ -315,9 +331,9 @@ os_default_templates_file = File.open("tmp/foreman_os_default_templates.json", "
 os_default_templates_file.write(JSON.generate(os_default_templates_content))
 os_default_templates_file.close
 
-host_parameters = [ "keymap=es" ]
+hosts_parameters = [ "oasforeman_foreman_ip=#{foreman_ip}", "oasforeman_foreman_fqdn=#{foreman_fqdn}", "oasforeman_foreman_hostname=#{foreman_hostname}" ]
 if proxy != ""
-  host_parameters.push("proxy=#{proxy}")
+  hosts_parameters.push("proxy=#{proxy}")
 end
 
 hosts_content = {
@@ -331,8 +347,8 @@ hosts_content = {
         "identifier" => katello_base_interface,
         "mac" => katello_base_mac,
         "ip" => katello_base_ip,
-        "subnet_id" => { "command" => "hammer --output=json subnet info '--name=#{katello_base_subnet_name}'|/usr/local/bin/jq -r .Id"}, # en realidad la subnet no es de katello exclusivamente...
-        "domain_id" => { "command" => "hammer --output=json domain info '--name=#{katello_base_domain}'|/usr/local/bin/jq -r .Id"}, # en realidad el dominio no es de katello exclusivamente...
+        "subnet_id" => { "command" => "hammer --output=json subnet info '--name=#{katello_base_subnet_name}'|/usr/local/bin/jq -r .Id"}, # TODO: en realidad la subnet no es de katello exclusivamente...
+        "domain_id" => { "command" => "hammer --output=json domain info '--name=#{katello_base_domain}'|/usr/local/bin/jq -r .Id"}, # TODO: en realidad el dominio no es de katello exclusivamente...
       },
       {
         "managed" => "true",
@@ -345,15 +361,9 @@ hosts_content = {
         "domain_id" => { "command" => "hammer --output=json domain info '--name=#{foreman_provision_domain}'|/usr/local/bin/jq -r .Id"},
       },
     ],
+    "parameters" => hosts_parameters.join(","),
   },
 }
-
-# add parameters if any
-if not host_parameters.empty?
-  hosts_content.each do |host, params|
-    hosts_content[host]["parameters"] = host_parameters.join(",")
-  end
-end
 
 hosts_file = File.open("tmp/foreman_hosts.json", "w")
 hosts_file.write(JSON.generate(hosts_content))
@@ -368,6 +378,9 @@ if not File.exists? "tmp/jq-linux64"
     end
   end
 end
+
+ok_puppet = "[ $? -eq 0 -o $? -eq 2 ]&&exit 0"
+install_complete_flag = "/etc/oasforeman_install_completed"
 
 Vagrant.configure(2) do |config|
   config.vm.box = "centos-7.2"
@@ -406,24 +419,38 @@ Vagrant.configure(2) do |config|
     foreman.vm.provision "shell", name: "environment 2/2", inline: "/usr/local/bin/set_environment.sh -n https_proxy -v '#{proxy}'"
 
     # foreman provision
-    foreman.vm.provision "shell", name: "foreman provision 1/3", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
-    foreman.vm.provision "shell", name: "foreman provision 2/3", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
-    foreman.vm.provision "shell", name: "foreman provision 3/3", inline: "sudo yum -y -v install foreman-installer git-daemon vim"
+    foreman.vm.provision "shell", name: "foreman prepare 1/3", inline: "if test ! -f /etc/yum.repos.d/puppetlabs.repo; then sudo rpm -iv http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm; fi"
+    foreman.vm.provision "shell", name: "foreman prepare 2/3", inline: "sudo yum -y -v install epel-release http://yum.theforeman.org/releases/1.11/el7/x86_64/foreman-release.rpm"
+    foreman.vm.provision "shell", name: "foreman prepare 3/3", inline: "sudo yum -y -v install foreman-installer git-daemon vim"
 
     # provision git
     foreman.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "/tmp/id_rsa_pub"
     foreman.vm.provision "shell", name: "git 1/3", inline: "egrep '^git:' /etc/passwd||sudo useradd -s /usr/bin/git-shell -m -r git"
     foreman.vm.provision "shell", name: "git 2/3", inline: "sudo /usr/local/bin/ensure_user_authorize_key.rb --authorize-key /tmp/id_rsa_pub --user git"
-    # foreman.vm.provision "shell", name: "git 3/3", inline: "rm -v /tmp/id_rsa_pub"
+    foreman.vm.provision "shell", name: "git 3/3", inline: "rm -v /tmp/id_rsa_pub"
 
-    # foreman install, execute thrice (or maybe twice) to ensure convergency
-    foreman.vm.provision "shell", name: "foreman install", inline: "#{foreman_installer_command_1};#{foreman_installer_command_2}||#{foreman_installer_command_2}"
+    # force foreman install
+    if force_foreman_install
+      foreman.vm.provision "shell", name: "force foreman install", inline: "sudo rm -f '#{install_complete_flag}'"
+    end
+
+    # foreman install 1
+    foreman.vm.provision "shell", name: "foreman install 1/4", inline: "[ -e '#{install_complete_flag}' ]||#{foreman_installer_command_1};#{ok_puppet}"
+
+    # puppet run
+    foreman.vm.provision "shell", name: "puppet run", inline: "[ -e '#{install_complete_flag}' ]||sudo puppet agent --test 2>/dev/null||true"
+
+    # foreman install 2
+    foreman.vm.provision "shell", name: "foreman install 2/4", inline: "[ -e '#{install_complete_flag}' ]||#{foreman_installer_command_2};#{ok_puppet}"
+
+    # foreman install 3
+    foreman.vm.provision "shell", name: "foreman install 3/4", inline: "[ -e '#{install_complete_flag}' ]||#{foreman_installer_command_3};#{ok_puppet}"
+    foreman.vm.provision "shell", name: "foreman install 4/4", inline: "[ -e '#{install_complete_flag}' ]||sudo touch '#{install_complete_flag}'"
 
     # puppet environments setup
     foreman.vm.provision "shell", name: "environments writable by git", inline: "chown root:git /etc/puppet/environments&&chmod 775 /etc/puppet/environments"
 
-    # puppet run, execute twice to ensure convergency
-    foreman.vm.provision "shell", name: "puppet run", inline: "sudo puppet agent --test 2>/dev/null||true" # nunca fallar porque puede que el ambiente no esté aun
+    # start foreman provision
 
     # foreman domains provision
     foreman.vm.provision "file", source: domains_file.path, destination: "/tmp/foreman_domains.json"
