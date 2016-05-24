@@ -7,6 +7,7 @@ name: oas_foreman_vars_snippet
 
 # Get the kernel parameters
 params=`cat /proc/cmdline`
+echo params are: $params
 # Split them on spaces
 params_split=(${params// / })
 # Go through each of them
@@ -19,6 +20,7 @@ do
     # And if the key have oasforeman_ on it
     if [[ $p_split[0] =~ 'oasforeman_' ]]
     then
+      echo insteresting param found: $p
       # Then set the key to the value
       eval $p
     fi
