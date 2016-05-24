@@ -5,9 +5,7 @@ oses:
 - CentOS 7
 %>
 <%#
-Esta plantilla fue adaptada "Kickstart default" según las necesidades de las OAS
-se deja compatible solamente con CentOS 7 y se adiciona un snippet
-para que funcione sin servicio de DNS.
+Esta plantilla fue adaptada de "Kickstart default" segun las necesidades de las OAS se deja compatible solamente con CentOS 7 y se adiciona un snippet para que funcione sin servicio de DNS.
 
 This template accepts the following parameters:
 - lang: string (default="en_US.UTF-8")
@@ -157,9 +155,14 @@ EOF
 /usr/bin/puppet agent --config /etc/puppet/puppet.conf -o --tags no_such_tag <%= @host.puppetmaster.blank? ? '' : "--server #{@host.puppetmaster}" %> --no-daemonize
 <% end -%>
 
-# Agregar la dirección de foreman estaticamente en el archivo hosts asi sabemos que va a funcionar siempre, incluso sin DNS
 <%= snippet 'oas_foreman_vars_snippet' %>
-echo "$oasforeman_foreman_ip $oasforeman_foreman_fqdn $oasforeman_foreman_hostname" >> /etc/hosts
+
+# Agregar la direccion de foreman estaticamente en el archivo hosts asi sabemos que va a funcionar siempre, incluso sin DNS
+cat >> /etc/hosts << EOF
+# inicio edit: agregar ip foreman al archivo hosts
+$oasforeman_foreman_ip $oasforeman_foreman_fqdn $oasforeman_foreman_hostname
+# fin edit
+EOF
 
 sync
 
