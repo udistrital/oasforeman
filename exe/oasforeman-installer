@@ -4,6 +4,48 @@
 # pero mas especifica para las necesidades de OAS
 # es como un comando `foreman-installer` pero desatendido
 
+require "yaml/store"
+require "hiera"
+require "yaml"
 require "bundler/setup"
 require "oasforeman"
+require "optparse"
+require "oasforeman/installer"
 
+options = {}
+OptionParser.new do |opts|
+  opts.on("--hiera-scope YAML", "In YAML format") do |value|
+    options[:"hiera-scope"] = value
+  end
+end.parse!
+
+if not options[:"hiera-scope"]
+  raise "--hiera-scope required"
+end
+
+yaml_hiera_scope = YAML.parse(options[:"hiera-scope"]||"---")
+
+if not yaml_hiera_scope.respond_to? :to_ruby
+  raise "Wrong --hiera-scope option."
+end
+
+hiera_scope = yaml_hiera_scope.to_ruby
+
+if not hiera_scope.kind_of? Hash or not hiera_scope["environment"]
+  raise "We need at least 'environment' in the scope, fix --hiera-scope option."
+end
+
+hiera = Hiera.new
+lookup = hiera.lookup "oasforeman-installer::options", nil, hiera_scope, nil, :hash
+state = YAML::Store.new "#{Dir.home}/.oasforeman-state"
+
+state.transaction do
+  if state["oasforeman-installer::options"] == lookup
+    puts "State not changed, nothing to do."
+    break
+  end
+  oasforeman_installer = OasforemanInstaller.new lookup
+  oasforeman_installer.run
+  puts "State changed, saving new state."
+  state["oasforeman-installer::options"] = lookup
+end

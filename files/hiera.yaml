@@ -1,17 +1,34 @@
 ---
+# configuraciones
+:logger: noop
+
+# para lookups de tipo :hash
+:merge_behavior: deeper
+:deep_merge_options:
+  :knockout_prefix: KTHXBYE
+  :merge_hash_arrays: true
+
 :backends:
-  - yaml
   - eyaml
+  - yaml
+
 :yaml:
   :datadir:
+
 :eyaml:
   :datadir:
   :extension: yaml
-  :pkcs7_private_key: "/etc/eyaml/%{environment}/private.pem"
-  :pkcs7_public_key: "/etc/eyaml/%{environment}/public.pem"
+  :pkcs7_private_key: "/etc/eyaml/%{::environment}/private.pem"
+  :pkcs7_public_key: "/etc/eyaml/%{::environment}/public.pem"
+
 :hierarchy:
   - global
-  - "%{clientcert}"
-  - "ambientes/%{environment}/applicaciones/%{appname}"
-  - "ambientes/%{environment}"
+  - "%{::clientcert}" # override de maquina
+  - "ambientes/%{::datacenter}/%{::environment}/applicaciones/%{::appname}" # del mas especifico
+  - "ambientes/%{::environment}/applicaciones/%{::appname}"
+  - "ambientes/%{::datacenter}/%{::environment}"
+  - "ambientes/%{::environment}"
+  - "aplicaciones/%{::datacenter}/%{::appname}"
+  - "aplicaciones/%{::appname}"
+  - "%{::datacenter}" # al mas general
   - local

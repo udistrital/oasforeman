@@ -33,5 +33,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "hiera", "~> 1.3.4"
+  spec.add_development_dependency "hiera-eyaml", "~> 2.1.0"
   spec.add_development_dependency "hammer_cli_foreman", "~> 0.6.2"
 end
