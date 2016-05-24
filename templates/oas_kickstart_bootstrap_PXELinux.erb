@@ -26,6 +26,9 @@ oses:
   if @host.params['blacklist']
     options << "modprobe.blacklist=" + @host.params['blacklist'].gsub(' ', '')
   end
+  @host.params.each do |param, value|
+    options << "#{param}=#{value.gsub(' ', '_')}"
+  end
   options = options.join(' ')
 -%>
 

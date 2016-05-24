@@ -220,6 +220,24 @@ hostgroups_file = File.open("tmp/foreman_hostgroups.json", "w")
 hostgroups_file.write(JSON.generate(hostgroups_content))
 hostgroups_file.close
 
+grupo_oas_parameters = [
+  { "name" => "oasforeman_foreman_ip", "value" => foreman_ip },
+  { "name" => "oasforeman_foreman_fqdn", "value" => foreman_fqdn },
+  { "name" => "oasforeman_foreman_hostname", "value" => foreman_hostname },
+]
+
+if proxy != ""
+  grupo_oas_parameters << { "name" => "http-proxy", "value" => proxy }
+end
+
+hostgroup_parameters_content = {
+  "grupo-oas" => grupo_oas_parameters,
+}
+
+hostgroup_parameters_file = File.open("tmp/foreman_hostgroup_parameters.json", "w")
+hostgroup_parameters_file.write(JSON.generate(hostgroup_parameters_content))
+hostgroup_parameters_file.close
+
 media_content = {
   "CentOS vault" => {
     "os-family" => "Redhat",
@@ -331,12 +349,6 @@ os_default_templates_file = File.open("tmp/foreman_os_default_templates.json", "
 os_default_templates_file.write(JSON.generate(os_default_templates_content))
 os_default_templates_file.close
 
-hosts_parameters = [ "oasforeman_foreman_ip=#{foreman_ip}", "oasforeman_foreman_fqdn=#{foreman_fqdn}", "oasforeman_foreman_hostname=#{foreman_hostname}" ]
-# solo durante desarrollo agregar el proxy así en otros ambientes será un setting del host específicamente
-if proxy != ""
-  hosts_parameters.push("http-proxy=#{proxy}")
-end
-
 hosts_content = {
   "#{katello_fqdn}" => {
     "hostgroup" => "grupo-#{puppet_environment}",
@@ -362,7 +374,6 @@ hosts_content = {
         "domain_id" => { "command" => "hammer --output=json domain info '--name=#{foreman_provision_domain}'|/usr/local/bin/jq -r .Id"},
       },
     ],
-    "parameters" => hosts_parameters.join(","),
   },
 }
 
@@ -494,6 +505,11 @@ Vagrant.configure(2) do |config|
     foreman.vm.provision "file", source: hostgroups_file.path, destination: "/tmp/foreman_hostgroups.json"
     foreman.vm.provision "shell", name: "hostgroups 1/2", inline: "sudo /usr/local/bin/ensure_foreman_hostgroups.rb --source /tmp/foreman_hostgroups.json"
     foreman.vm.provision "shell", name: "hostgroups 2/2", inline: "rm -v /tmp/foreman_hostgroups.json"
+
+    # foreman hostgroup parameters provision
+    foreman.vm.provision "file", source: hostgroup_parameters_file.path, destination: "/tmp/foreman_hostgroup_parameters.json"
+    foreman.vm.provision "shell", name: "hostgroup parameters 1/2", inline: "sudo /usr/local/bin/ensure_foreman_hostgroup_parameters.rb --source /tmp/foreman_hostgroup_parameters.json"
+    foreman.vm.provision "shell", name: "hostgroup parameters 2/2", inline: "rm -v /tmp/foreman_hostgroup_parameters.json"
 
     # foreman hosts provision
     foreman.vm.provision "file", source: hosts_file.path, destination: "/tmp/foreman_hosts.json"
