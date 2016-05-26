@@ -19,8 +19,10 @@ proxy = "#{ENV["http_proxy"]}"
 puppet_environment = "desarrollo"
 hiera_repo = "https://github.com/udistrital/oashiera.git"
 puppet_repo = "https://github.com/udistrital/oaspuppet.git"
-devel_packages = "vim ruby-devel"
-devel_groups = [ "Development Tools" ]
+# devel_packages = "vim ruby-devel"
+devel_packages = "vim"
+# devel_groups = [ "Development Tools" ]
+devel_groups = [ ]
 
 # general foreman settings
 foreman_ip = "192.168.12.42"
@@ -571,7 +573,7 @@ Vagrant.configure(2) do |config|
   config.vm.define :katello, autostart: false do |katello|
     katello.vm.base_mac = katello_base_mac
     katello.vm.network "private_network", ip: katello_provision_ip, mac: katello_provision_mac
-    katello.vm.boot_timeout = 3600
+    katello.vm.boot_timeout = 600
     # set host only interface with highest priority to boot
     # provision more ram and cpu
     katello.vm.provider "virtualbox" do |vbox|

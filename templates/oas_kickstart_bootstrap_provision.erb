@@ -155,23 +155,11 @@ EOF
 /usr/bin/puppet agent --config /etc/puppet/puppet.conf -o --tags no_such_tag <%= @host.puppetmaster.blank? ? '' : "--server #{@host.puppetmaster}" %> --no-daemonize
 <% end -%>
 
-set
-echo "antes del snippet"
-
 <%= snippet 'oas_foreman_vars_snippet' %>
-
-echo "despues del snippet"
-set
 
 # Agregar la direccion de foreman estaticamente en el archivo hosts asi sabemos que va a funcionar siempre, incluso sin DNS
 cat >> /etc/hosts << EOF
-# inicio edit: agregar ip foreman al archivo hosts
-$oasforeman_foreman_ip $oasforeman_foreman_fqdn $oasforeman_foreman_hostname
-# fin edit
-EOF
-
-cat >> /etc/hosts.2 << EOF
-# inicio edit: agregar ip foreman al archivo hosts
+# inicio edit: agregar ip de foreman al archivo hosts
 $oasforeman_foreman_ip $oasforeman_foreman_fqdn $oasforeman_foreman_hostname
 # fin edit
 EOF
